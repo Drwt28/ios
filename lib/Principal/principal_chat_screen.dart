@@ -16,7 +16,7 @@ class _PrincipalChatScreenState extends State<PrincipalChatScreen> {
   Widget build(BuildContext context) {
     var pref = Provider.of<SharedPreferences>(context);
 
-    String pId = pref.getString('principal');
+    String pId = pref.getString('school');
     String schoolId = pref.getString('school');
     return Scaffold(
         body: pId == null

@@ -14,7 +14,10 @@ class AttendencePage extends StatefulWidget {
 
   Map<dynamic, dynamic> map;
 
-  AttendencePage({@required this.map});
+
+  List keyList;
+
+  AttendencePage({@required this.map, this.keyList});
 
   @override
   _AttendencePageState createState() => _AttendencePageState();
@@ -45,11 +48,13 @@ class _AttendencePageState extends State<AttendencePage> {
             .collection('schools')
             .document(pref.getString('school'))
             .collection('students')
+            .orderBy('name')
             .where('classId', isEqualTo: user.email)
             .snapshots(),
         builder: (context, query) {
           return (query.data != null && query.data.documents.length > 0)
               ? Scaffold(
+            backgroundColor: Colors.white,
             body: CustomScrollView(
               slivers: <Widget>[
                 SliverAppBar(
@@ -59,17 +64,19 @@ class _AttendencePageState extends State<AttendencePage> {
                   MediaQuery
                       .of(context)
                       .size
-                      .height * 0.4,
+                      .height * 0.3,
                   flexibleSpace: FlexibleSpaceBar(
                     centerTitle: true,
                     collapseMode: CollapseMode.parallax,
                     title: Text(
-                      'Attendence',
+                      'Attendance',
                       style: TextStyle(color: Colors.black),
                     ),
                     background: Center(
                       child: SizedBox(
-                          height: 200, width: 200, child: buildTopBox()),
+                          height: 100,
+                          width: 100,
+                          child: Center(child: buildTopBox())),
                     ),
                   ),
                 ),
@@ -95,7 +102,7 @@ class _AttendencePageState extends State<AttendencePage> {
                       children: <Widget>[
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text('Take Attendence'),
+                          child: Text('Take Attendance'),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
@@ -110,72 +117,36 @@ class _AttendencePageState extends State<AttendencePage> {
         });
   }
 
-  static List<bool> triple = [false, false, false];
-  List<List<bool>> isSelected =
-  List.generate(200, (_) => [false, false, false]);
+
 
   Widget buildAttendenceTile(DocumentSnapshot snap, int i) {
-    return ListTile(
-      title: Text("\t" + snap.data['name']),
-      trailing: ToggleButtons(
-        fillColor: Colors.white,
-        disabledColor: Colors.black12,
-        selectedBorderColor: Colors.blue,
-        borderRadius: BorderRadius.circular(2),
-        selectedColor: selectColor,
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.all(3.0),
-            child: buildAttendence("A"),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(3.0),
-            child: buildAttendence("P"),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(3.0),
-            child: buildAttendence('L'),
-          )
-        ],
-        onPressed: (int index) {
-          setState(() {
-            int j = 0;
-            for (var c in isSelected[i]) {
-              if (isSelected[i][j]) {
-                isSelected[i][j] = false;
-              }
-              j++;
-            }
-            isSelected[i][index] = true;
-            if (index == 0) {
-              absentList.add(snap.data['id']);
-              presentList.remove(snap.data['id']);
-              leaveList.remove(snap.data['id']);
-            } else if (index == 1) {
-              presentList.add(snap.data['id']);
-              absentList.remove(snap.data['id']);
-              leaveList.remove(snap.data['id']);
-            } else {
-              leaveList.add(snap.data['id']);
-              presentList.remove(snap.data['id']);
-              absentList.remove(snap.data['id']);
-            }
-          });
-        },
-        isSelected: isSelected[i],
-      ),
-    );
+    return AttendenceTile(rollNo: (i + 1).toString(), name: snap.data['name'],
+      onChange: (index) {
+        if (index == 0 && !absentList.contains(snap.documentID)) {
+          absentList.add(snap.documentID);
+          presentList.remove(snap.documentID);
+          leaveList.remove(snap.documentID);
+        }
+        else if (index == 1 && !presentList.contains(snap.documentID)) {
+          absentList.remove(snap.documentID);
+          presentList.add(snap.documentID);
+          leaveList.remove(snap.documentID);
+        }
+        if (index == 2 && !leaveList.contains(snap.documentID)) {
+          absentList.add(snap.documentID);
+          presentList.remove(snap.documentID);
+          leaveList.add(snap.documentID);
+        }
+      },);
   }
 
-  Widget buildAttendence(String a) {
-    return Text(a, style: TextStyle(fontSize: 28));
-  }
+
 
   buildWidget() {}
 
   Widget buildTopBox() {
     return Hero(
-      tag: 'attendence',
+      tag: 'attendance',
       child: Image(
         image: AssetImage('assets/teacher/attendence.png'),
       ),
@@ -221,6 +192,7 @@ class _AttendencePageState extends State<AttendencePage> {
     'NOV',
     "DEC"
   ];
+
   updateAttendece(String schoolid, List<DocumentSnapshot> snap,
       String classId) {
     var db = Firestore.instance.collection('schools/$schoolid/students');
@@ -237,7 +209,6 @@ class _AttendencePageState extends State<AttendencePage> {
         db.document(id).updateData({'absentList': list});
         _notification.sendNotification(
             "Attendence", '$name is absent in todays class ', id);
-
       } else if (presentList.contains(id)) {
         var list = new List<dynamic>.from(doc.data['presentList']);
         list.add(DateTime.now());
@@ -253,21 +224,24 @@ class _AttendencePageState extends State<AttendencePage> {
     CustomWidgets.getTimeFromString(DateTime.now());
 
     Map<String, int> map = Map.from(widget.map);
+    List keyList = List.from(widget.keyList);
 
     var d = DateTime.now();
     String date = d.day.toString() + "\t" + month[d.month - 1];
 
-    map[date] =
-        presentList.length;
+    if (!keyList.contains(date)) {
+      keyList.add(date);
+    }
+    map[date] = presentList.length;
     Firestore.instance
         .document('schools/$schoolid/classes/$classId')
         .updateData({
+      'lastAttendence': DateTime.now(),
+      'attendenceKey': keyList,
       'attendenceList': map,
       'presentStudents': presentList.length.toString()
     })
-        .then((val) {
-
-    })
+        .then((val) {})
         .catchError((error) {
       print(error);
     });
@@ -293,3 +267,79 @@ class _AttendencePageState extends State<AttendencePage> {
         ));
   }
 }
+
+class AttendenceTile extends StatefulWidget {
+
+
+  final Function(int) onChange;
+
+  String name, rollNo;
+
+  AttendenceTile({@required this.rollNo, this.name, this.onChange});
+
+  @override
+  _AttendenceTileState createState() => _AttendenceTileState();
+}
+
+class _AttendenceTileState extends State<AttendenceTile> {
+
+  final List<Color> colors = [Colors.red, Colors.green, Colors.blue];
+
+  List<bool> selectedList = [false, false, false];
+
+  Color selectedColor = Colors.green;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(widget.rollNo + "\t" + widget.name),
+      trailing: ToggleButtons(
+        selectedColor: selectedColor,
+        fillColor: Colors.white,
+        disabledColor: Colors.black12,
+        selectedBorderColor: selectedColor,
+        borderWidth: 1.7,
+        isSelected: selectedList,
+        onPressed: (i) {
+          setState(() {
+            widget.onChange(i);
+            selectedColor = colors[i];
+
+            for (int j = 0; j < 3; j ++) {
+              selectedList[j] = false;
+            }
+            selectedList[i] = true;
+          });
+        },
+        borderRadius: BorderRadius.circular(19),
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.all(3.0),
+            child: buildAttendence("A"),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(3.0),
+            child: buildAttendence("P"),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(3.0),
+            child: buildAttendence('L'),
+          )
+        ],
+
+      ),
+    );
+  }
+
+
+  Widget buildAttendence(String a) {
+    return Container(
+        height: 45,
+        width: 45,
+        decoration: BoxDecoration(shape: BoxShape.circle
+        ),
+        child: Center(child: Text(
+            a, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500))));
+  }
+}
+

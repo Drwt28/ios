@@ -12,54 +12,21 @@ class SpalashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-          child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          SizedBox(
-            width: 100,
-            height: 100,
-            child: Container(
-              decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                      colors: [Colors.lightBlue, Colors.blue, Colors.indigo])),
-              child: Center(
-                  child: Text(
-                'S',
-                style: TextStyle(fontSize: 50, color: Colors.white),
-              )),
-            ),
+        backgroundColor: Colors.white,
+        body: Center(
+
+          child: Image(
+            image: AssetImage('assets/logo/logo.png'),
+            height: MediaQuery
+                .of(context)
+                .size
+                .height * 0.6,
+            width: MediaQuery
+                .of(context)
+                .size
+                .width * 0.6,
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  'School',
-                  style: TextStyle(
-                    fontSize: 38,
-                    fontWeight: FontWeight.w500,
-                    foreground: Paint()..shader = l1,
-                  ),
-                ),
-                SizedBox(
-                  width: 5,
-                ),
-                Text(
-                  'Magna',
-                  style: TextStyle(
-                    fontSize: 38,
-                    foreground: Paint()..shader = l2,
-                  ),
-                )
-              ],
-            ),
-          ),
-        ],
-      )),
+        )
     );
   }
 }

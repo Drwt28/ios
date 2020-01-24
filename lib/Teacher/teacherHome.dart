@@ -1,3 +1,4 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,12 +10,17 @@ import 'package:school_magna/Model/Database/db.dart';
 import 'package:school_magna/Model/model.dart';
 import 'package:school_magna/Notification/Notification.dart';
 import 'package:school_magna/Services/Teacher.dart';
+import 'package:school_magna/StartScreen/SchoolsList.dart';
+import 'package:school_magna/Student/StudentChatPage.dart';
 import 'package:school_magna/Teacher/TeacherChatPage.dart';
 import 'package:school_magna/Teacher/functions/AddStudent.dart';
 import 'package:school_magna/Teacher/functions/AttendenceScreen.dart';
+import 'package:school_magna/Teacher/functions/CreateStudentChat.dart';
 import 'package:school_magna/Teacher/functions/NoticeScreen.dart';
+import 'package:school_magna/Teacher/functions/StudentResultScreen.dart';
 import 'package:school_magna/Teacher/functions/feesNotificationScreen.dart';
 import 'package:school_magna/Teacher/functions/homeWork.dart';
+import 'package:school_magna/Teacher/functions/recentActivity.dart';
 import 'package:school_magna/Teacher/functions/remarkScreen.dart';
 import 'package:school_magna/Teacher/functions/studentListScreen.dart';
 import 'package:school_magna/main.dart';
@@ -28,6 +34,7 @@ class TeacherHomePage extends StatefulWidget {
 class _TeacherHomePageState extends State<TeacherHomePage> {
   PageController controller = PageController();
   ScrollController listViewController = ScrollController();
+  TextEditingController resultNameField = TextEditingController();
   String title = "title";
   int _currentIndex = 0;
 
@@ -46,14 +53,20 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
   final db = DatabaseService();
 
   NoticationService _notication = NoticationService();
-
+  final _formKey = GlobalKey<FormState>();
   @override
   void initState() {
     super.initState();
     setState(() {
       getData();
-      _notication.saveUserToken("class4f");
     });
+  }
+
+  @override
+  void dispose() {
+    pageController.dispose();
+    listViewController.dispose();
+    super.dispose();
   }
 
   @override
@@ -105,12 +118,18 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                                                   MaterialPageRoute(
                                                       builder: (context) =>
                                                           AddStudentPage(
-                                                              List())));
+                                                              subList)));
                                             }),
                                         ListTile(
                                           leading: Icon(Icons.access_alarm),
                                           title: Text('Recent Activity'),
-                                          onTap: () {},
+                                          onTap: () {
+                                            Navigator.push(
+                                                context, MaterialPageRoute(
+                                                builder: (context) =>
+                                                    TeacherRecentActivityScreen()
+                                            ));
+                                          },
                                         ),
                                         ListTile(
                                           leading: Icon(Icons.edit),
@@ -119,18 +138,20 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                                         ),
                                         ListTile(
                                           title: Text('Log Out'),
+                                          leading: Icon(Icons.settings_power),
                                           onTap: () async {
-                                            FirebaseAuth.instance.signOut()
+                                            FirebaseAuth.instance
+                                                .signOut()
                                                 .then((val) {
                                               SharedPreferences.getInstance()
                                                   .then((val) {
                                                 val.clear().then((val) {
+                                                  Navigator.pop(context);
                                                   Navigator.pushReplacement(
                                                       context,
                                                       MaterialPageRoute(
                                                           builder: (context) =>
-                                                              MyApp()
-                                                      ));
+                                                              SchoolsListScreen()));
                                                 });
                                               });
                                             });
@@ -160,8 +181,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                       : ChatPage()),
             )
           ],
-        )
-    );
+        ));
   }
 
   teacherDashBoard(Map<String, dynamic> map) {
@@ -201,8 +221,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
   Widget buildDashboardText(String text) {
     return Text(text,
         style: TextStyle(
-            color: Colors.blueAccent,
-            fontWeight: FontWeight.w600,
+            color: Colors.indigo,
+            fontWeight: FontWeight.w500,
             fontSize: 17));
   }
 
@@ -257,6 +277,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
               return (!snapshot.hasData)
                   ? CircularProgressIndicator()
                   : CustomScrollView(
+                physics: BouncingScrollPhysics(),
                 slivers: <Widget>[
                   SliverAppBar(
                     pinned: false,
@@ -264,7 +285,9 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                     primary: false,
                     leading: SizedBox(),
                     title: Text(
-                      snapshot.data.data['teacherName'],
+                      snapshot.data.data['teacherName']
+                          .toString()
+                          .toUpperCase(),
                       style: TextStyle(
                           fontSize: 20,
                           foreground: Paint()
@@ -277,7 +300,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                     MediaQuery
                         .of(context)
                         .size
-                        .height * 0.28,
+                        .height * 0.34,
                     flexibleSpace: FlexibleSpaceBar(
                       collapseMode: CollapseMode.parallax,
                       background: Container(
@@ -312,10 +335,9 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                       ),
                     ),
                   ),
-
                   SliverGrid.count(
                     crossAxisCount: 1,
-                    childAspectRatio: 3.8,
+                    childAspectRatio: 2.8,
                     children: <Widget>[
                       GestureDetector(
                           onTap: () {
@@ -334,9 +356,49 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                     ],
                   ),
                   SliverGrid.count(
-                    crossAxisCount: 2,
-                    childAspectRatio: 1.0,
+                    crossAxisCount: 1,
+                    childAspectRatio: 4.8,
                     children: <Widget>[
+                      GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) =>
+                                    AddStudentPage(
+                                        snapshot.data.data['subjectList'])));
+                          },
+                          child: CustomWidgets
+                              .teacherHomePannelCardHeroSingle(
+                              context,
+                              'Add Student',
+                              'assets/teacher/add.png',
+                              Colors.indigo,
+                              Colors.indigoAccent,
+                              'add'))
+                    ],
+                  ),
+                  SliverGrid.count(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.1,
+                    children: <Widget>[
+
+                      GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) =>
+                                    AttendencePage(
+                                      map: snapshot
+                                          .data.data['attendenceList'],
+                                      keyList: snapshot.data
+                                          .data['attendenceKey'] ?? List(),
+                                    )));
+                          },
+                          child: CustomWidgets.teacherHomePannelCardHero(
+                              context,
+                              'Attendance',
+                              'assets/teacher/attendence.png',
+                              Colors.indigoAccent,
+                              Colors.indigo,
+                              'attandence')),
                       GestureDetector(
                         onTap: () {
                           Navigator.of(context).push(MaterialPageRoute(
@@ -346,8 +408,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             context,
                             'Notice',
                             'assets/teacher/notice.png',
-                            Colors.blue,
-                            Colors.lightBlue,
+                            Colors.indigo,
+                            Colors.blueAccent,
                             'notice'),
                       ),
                       GestureDetector(
@@ -365,22 +427,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             Colors.blueAccent,
                             'remark'),
                       ),
-                      GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).push(MaterialPageRoute(
-                                builder: (context) =>
-                                    AttendencePage(
-                                      map: snapshot
-                                          .data.data['attendenceList'],
-                                    )));
-                          },
-                          child: CustomWidgets.teacherHomePannelCardHero(
-                              context,
-                              'Attendence',
-                              'assets/teacher/attendence.png',
-                              Colors.indigoAccent,
-                              Colors.indigo,
-                              'attendence')),
+
                       GestureDetector(
                         onTap: () {
                           Navigator.of(context).push(MaterialPageRoute(
@@ -410,12 +457,54 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             Colors.lightBlue,
                             'studentList'),
                       ),
-                      CustomWidgets.teacherHomePannelCard(
-                          context,
-                          'Result',
-                          'assets/teacher/exam.png',
-                          Colors.indigo,
-                          Colors.indigoAccent)
+                      GestureDetector(
+                        onTap: () {
+                          showDialog(context: context, child: Form(
+                            key: _formKey,
+                            child: AlertDialog(
+                              shape: RoundedRectangleBorder(),
+                              title: TextFormField(
+                                controller: resultNameField,
+                                validator: (value) {
+                                  return value.isEmpty
+                                      ? 'Please Enter Result Name'
+                                      : null;
+                                },
+                                decoration: InputDecoration(
+                                    hintText: 'Enter Result Name'),),
+                              actions: <Widget>[
+                                FlatButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: Text('cancel'),
+                                ), FlatButton(
+                                  color: Colors.indigo,
+                                  onPressed: () {
+                                    if (_formKey.currentState.validate()) {
+                                      Navigator.pushReplacement(context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  StudentResultPage(
+                                                      resultName: resultNameField
+                                                          .text
+                                                  )));
+                                    }
+                                  },
+                                  child: Text('ok'),
+                                )
+                              ],
+                            ),
+                          ));
+                        },
+                        child: CustomWidgets.teacherHomePannelCardHero(
+                            context,
+                            'Result',
+                            'assets/teacher/exam.png',
+                            Colors.indigo,
+                            Colors.indigoAccent, 'exam'),
+
+                      )
                     ],
                   )
                 ],
@@ -427,9 +516,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     user = Provider.of<FirebaseUser>(context);
     var pref = Provider.of<SharedPreferences>(context);
 
-
     return Scaffold(
-
+      backgroundColor: Colors.white,
       body: user.email == null
           ? CircularProgressIndicator()
           : StreamBuilder<QuerySnapshot>(
@@ -442,7 +530,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         builder: (context, query) =>
         (query.hasData &&
             query.data.documents.length > 0)
-            ? buildStudentChatList(query.data.documents, user.email)
+            ? buildStudentChatList(query.data.documents)
             : Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -462,6 +550,13 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.chat),
+        onPressed: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => createStudentChat()));
+        },
+      ),
     );
   }
 
@@ -475,8 +570,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         child: Padding(
           padding: const EdgeInsets.all(15.0),
           child: Text(
-            text,
-            style: TextStyle(fontSize: 15, color: Colors.black54),
+            text.toString().toUpperCase(),
+            style: TextStyle(fontSize: 16, color: Colors.black54),
           ),
         ),
       ),
@@ -489,14 +584,13 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
 
   buildTopBarSelectedText(text, int i) {
     print(controller.page);
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Text(
-          text,
+          text.toString().toUpperCase(),
           style: TextStyle(
-              fontSize: 36,
+              fontSize: 30,
               fontWeight: FontWeight.w800,
               foreground: Paint()
                 ..shader = linearGradient),
@@ -505,8 +599,13 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     );
   }
 
-  buildStudentChatList(List<DocumentSnapshot> documents, String id) {
+  buildStudentChatList(List<DocumentSnapshot> documents) {
+    var pref = Provider.of<SharedPreferences>(context);
+    String id = pref.getString('school');
+
     return ListView.builder(
+        semanticChildCount: currentItem,
+        physics: BouncingScrollPhysics(),
         itemCount: documents.length,
         itemBuilder: (cont, i) {
           return buildChatList(documents[i], id);
@@ -514,10 +613,20 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
   }
 
   buildChatList(DocumentSnapshot document, String id) {
+    var user = Provider.of<FirebaseUser>(context);
     var pref = Provider.of<SharedPreferences>(context);
 
+    AssetImage image = AssetImage('assets/parent/parents.png');
+//    String topic = id.substring(0, id.indexOf("@")) +
+//        document.documentID.substring(0, document.documentID.indexOf("@"));
+//
+//    pref.setString('topic', topic);
+//    topic = document.documentID.substring(0, document.documentID.indexOf("@")) +
+//        id.substring(0, id.indexOf("@"));
+//
+//    _notication.saveUserToken(topic);
     bool d = false;
-
+    String name = document.data['name'];
     int not = document.data['count'];
     int count = pref.getInt(document.documentID);
     if (count == null) {
@@ -525,46 +634,68 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
       pref.setInt(document.documentID, not);
 
       d = true;
-    }
-    else {
+    } else {
       if (not == count) {
         d = false;
-      }
-      else {
+      } else {
         d = true;
       }
     }
 
+    if (document.documentID == user.email) {
+      name = pref.getString('school');
+      name = name.substring(0, name.indexOf("@"));
+      image = AssetImage('assets/teacher/teacher.png');
+    }
+
     return Card(
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6)
-      ),
+      elevation: 10,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       child: ListTile(
-        title: Text((document.data['users'][0].toString().substring(
-            0, document.data['users'][0].toString().indexOf("@")))),
+        title: Text((name)),
         subtitle: Text('See Messages'),
         leading: Image(
-          image: AssetImage('assets/teacher/teacher.png'),
+          image: image,
         ),
         trailing: SizedBox(
           height: 30,
           width: 30,
-          child: !(count - not == 0) ? Container(
+          child: !(count - not == 0)
+              ? Container(
             decoration: BoxDecoration(
-              shape: BoxShape.circle
-              , color: Colors.indigo,
+              shape: BoxShape.circle,
+              color: Colors.indigo,
             ),
-            child: Center(child: Text((not - count).toString(),
-              style: TextStyle(color: Colors.white),)),
-          ) : SizedBox(),
-
+            child: Center(
+                child: Text(
+                  (not - count).toString(),
+                  style: TextStyle(color: Colors.white),
+                )),
+          )
+              : SizedBox(),
         ),
         onTap: () {
           pref.setInt(document.documentID, not);
-          Navigator.push(context, MaterialPageRoute(
-              builder: (context) =>
-                  ChatScreen(classId: document.documentID, id: id,)
-          ));
+          if (user.email == document.documentID) {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        ChatScreen(
+                          classId: document.documentID,
+                          id: id,
+                        )));
+          } else {
+            pref.setString('studentName', document.data['name']);
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        StudentChatScreen(
+                          studentId: document.documentID,
+                          classId: user.email,
+                        )));
+          }
         },
       ),
     );

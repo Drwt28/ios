@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 
@@ -14,13 +15,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 class HomeworkTile extends StatefulWidget {
   String subjectName;
 
-  var days = [
+  final days = [
     'Monday',
     'Tuesday',
     'Wednesday',
     'Thrusday',
     'Friday',
     'Saturday'
+        'Sunday'
   ];
   Firestore db = Firestore.instance;
 
@@ -179,13 +181,15 @@ class _HomeworkTileState extends State<HomeworkTile> {
     final FirebaseStorage storage = FirebaseStorage.instance;
 
     DateTime date = DateTime.now();
+    print(date.weekday);
     StorageReference ref = storage
         .ref()
         .child(pref.getString('school'))
         .child(user.email)
-        .child(widget.subjectName + widget.days[date.weekday - 1]);
+        .child(widget.subjectName);
 
     StorageUploadTask uploadTask = ref.putFile(imageFile);
+
 
     if (uploadTask.isInProgress) {
       setState(() {
@@ -208,8 +212,8 @@ class _HomeworkTileState extends State<HomeworkTile> {
 
     DateTime date = DateTime.now();
 
-    homework['day'] = widget.days[date.weekday];
-    String day = widget.days[date.weekday - 1].toLowerCase();
+    homework['day'] = widget.days[date.weekday - 2];
+    String day = widget.days[date.weekday - 2].toLowerCase();
     DocumentReference doc =
     Firestore.instance.document('schools/$schoolId/classes/$id');
 

@@ -4,10 +4,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:school_magna/Services/Student.dart';
+import 'package:school_magna/Teacher/teacherHome.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AddStudentPage extends StatelessWidget {
   List<dynamic> subList = List();
+
+
+  AddStudentPage(this.subList);
 
   @override
   Widget build(BuildContext context) {
@@ -70,21 +74,23 @@ class AddStudentPage extends StatelessWidget {
     );
   }
 
-  void addData(String Sname, Fname, Mname, id, schoolId, BuildContext context) {
+  void addData(String Sname, String Fname, String Mname, id, schoolId,
+      BuildContext context) {
     CollectionReference collectionReference = Firestore.instance
         .collection('schools')
         .document(schoolId)
         .collection('students');
 
-    String studentId = Sname.trim() + Fname.trim() + Mname.trim();
+    String studentId = Sname.trim().toLowerCase() + Fname.toLowerCase().trim() +
+        Mname.toLowerCase().trim();
 
     Map map = Map<String, dynamic>();
 
     Student student = Student(
         '1',
-        Sname,
-        Fname,
-        Mname,
+        Sname.toLowerCase().trim(),
+        Fname.toLowerCase().trim(),
+        Mname.toLowerCase().trim(),
         '',
         studentId,
         id,
@@ -105,17 +111,22 @@ class AddStudentPage extends StatelessWidget {
       showCupertinoDialog(
           context: context,
           builder: (context) =>
-              CupertinoAlertDialog(
+              AlertDialog(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)
+                ),
                 title: Text('Well done'),
                 content: Text('Student Succesfully Added to class'),
                 actions: <Widget>[
-                  CupertinoButton(
+                  FlatButton(
                     onPressed: () {
-                      Navigator.pop(context);
+                      Navigator.pushReplacement(context, MaterialPageRoute(
+                          builder: (context) => TeacherHomePage()
+                      ));
                     },
                     child: Text('done'),
                   ),
-                  CupertinoButton(
+                  FlatButton(
                     onPressed: () {},
                     color: Colors.blue,
                     child: Text('Add Another'),
@@ -125,5 +136,4 @@ class AddStudentPage extends StatelessWidget {
     });
   }
 
-  AddStudentPage(this.subList);
 }

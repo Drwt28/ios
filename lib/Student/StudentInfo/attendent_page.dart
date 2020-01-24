@@ -24,66 +24,52 @@ class _AttendentPageState extends State<AttendentPage> {
     String schoolId = pref.getString('school');
     String id = pref.getString('Student');
     return Scaffold(
-
       body: StreamBuilder<DocumentSnapshot>(
           stream: Firestore.instance
               .document('schools/$schoolId/students/$id')
               .snapshots(),
           builder: (context, snapshot) {
-            return !snapshot.hasData ? Center(
-                child: CircularProgressIndicator()) : Padding(
+            return !snapshot.hasData
+                ? Center(child: CircularProgressIndicator())
+                : Padding(
               padding: const EdgeInsets.all(8.0),
               child: SafeArea(
                 child: ListView(
                   scrollDirection: Axis.vertical,
                   children: <Widget>[
-
                     Card(
-                      color: Colors.white,
+                      color: Colors.grey.shade100,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)
-                      ),
+                          borderRadius: BorderRadius.circular(10)),
                       child: ListTile(
-
-                          leading: Container(
-                            width: 100,
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                image: AssetImage(
-                                  'assets/parent/parents.png',
-                                ),
-                                fit: BoxFit.scaleDown,
-                              ),
-                            ),
-                          ),
-                          title: Column(
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: <Widget>[
-                              buildDashText('Name', snapshot.data.data['name'])
-                              , buildDashText(
-                                  'Roll No:', snapshot.data.data['rollNo'])
-                              ,
-                              buildDashText('Total Present',
+                              buildDashText(
+                                  'Total Present:',
                                   snapshot.data.data['presentList'].length
-                                      .toString())
-                              , buildDashText('Total Absent',
+                                      .toString()),
+
+                              buildDashText(
+                                  'Total Absent:',
                                   snapshot.data.data['absentList'].length
-                                      .toString())
-                              , buildDashText('Total Present',
+                                      .toString()),
+
+                              buildDashText(
+                                  'Total Leave:',
                                   snapshot.data.data['leaveList'].length
                                       .toString())
-
                             ],
                           )),
                     ),
-
-
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: <Widget>[
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            mainAxisAlignment:
+                            MainAxisAlignment.spaceAround,
                             mainAxisSize: MainAxisSize.max,
                             children: <Widget>[
                               Text(
@@ -106,7 +92,8 @@ class _AttendentPageState extends State<AttendentPage> {
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            mainAxisAlignment:
+                            MainAxisAlignment.spaceEvenly,
                             mainAxisSize: MainAxisSize.max,
                             children: <Widget>[
                               Text(
@@ -120,7 +107,8 @@ class _AttendentPageState extends State<AttendentPage> {
                                 height: 25,
                                 width: 25,
                                 decoration: BoxDecoration(
-                                    shape: BoxShape.circle, color: Colors.red),
+                                    shape: BoxShape.circle,
+                                    color: Colors.red),
                               )
                             ],
                           ),
@@ -128,7 +116,8 @@ class _AttendentPageState extends State<AttendentPage> {
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            mainAxisAlignment:
+                            MainAxisAlignment.spaceEvenly,
                             mainAxisSize: MainAxisSize.max,
                             children: <Widget>[
                               Text(
@@ -142,7 +131,8 @@ class _AttendentPageState extends State<AttendentPage> {
                                 height: 25,
                                 width: 25,
                                 decoration: BoxDecoration(
-                                    shape: BoxShape.circle, color: Colors.blue),
+                                    shape: BoxShape.circle,
+                                    color: Colors.blue),
                               )
                             ],
                           ),
@@ -150,7 +140,7 @@ class _AttendentPageState extends State<AttendentPage> {
                       ],
                     ),
                     Card(
-                      color: Colors.grey.shade200,
+                      color: Colors.indigo.shade50,
                       elevation: 0.4,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10.0)),
@@ -160,7 +150,7 @@ class _AttendentPageState extends State<AttendentPage> {
                           height: MediaQuery
                               .of(context)
                               .size
-                              .height * .5,
+                              .height * .55,
                           width: MediaQuery
                               .of(context)
                               .size
@@ -243,19 +233,17 @@ class _AttendentPageState extends State<AttendentPage> {
   }
 
   buildDashText(String title, val) {
-    return Padding(
-      padding: const EdgeInsets.all(4.0),
-      child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            Flexible(
-                flex: 1,
-                child: Text(title, style: TextStyle(color: Colors.blue),)),
-            Flexible(
-                flex: 1,
-                child: Text(val, style: TextStyle(color: Colors.indigoAccent)))
-
-          ]),
-    );
+    return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          Text(
+            title,
+            style: TextStyle(color: Colors.black87, fontSize: 15),
+          ),
+          Text(val, style: TextStyle(fontSize: 16.0,
+              color: Colors.indigoAccent,
+              fontWeight: FontWeight.w500))
+        ]);
   }
 }

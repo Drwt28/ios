@@ -1,4 +1,4 @@
-package com.example.school_magna
+package com.rawat.school_magna
 
 import android.os.Bundle
 

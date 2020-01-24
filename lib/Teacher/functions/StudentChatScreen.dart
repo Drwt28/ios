@@ -3,31 +3,31 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:school_magna/Model/constraints.dart';
+import 'package:school_magna/Notification/TeacherNotification.dart';
 import 'package:school_magna/Principal/CreateChatPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class StudentChatScreen extends StatefulWidget {
+class StudentCharScreen extends StatefulWidget {
   final classId;
-  final studentId;
+  final id;
 
-  StudentChatScreen({this.classId, this.studentId});
+  StudentCharScreen({this.classId, this.id});
 
   @override
-  _StudentChatScreenState createState() => _StudentChatScreenState();
+  _StudentCharScreenState createState() => _StudentCharScreenState();
 }
 
 final _firestore = Firestore.instance;
 FirebaseUser loggedInUser;
 var pref, currentUser;
-bool isTeacher = false;
 
-class _StudentChatScreenState extends State<StudentChatScreen> {
-
+class _StudentCharScreenState extends State<StudentCharScreen> {
   String sender = "";
   final _auth = FirebaseAuth.instance;
   String messageText;
-
   TextEditingController messageTextEditingController = TextEditingController();
+
+  TeacherNotification teacherNotification = TeacherNotification();
 
   @override
   void initState() {
@@ -40,7 +40,6 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
     try {
       final user = await _auth.currentUser();
       if (user != null) {
-        isTeacher = true;
         loggedInUser = user;
       }
     } catch (e) {
@@ -48,15 +47,17 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
     }
     loggedInUser != null
         ? currentUser = loggedInUser.email
-        : currentUser = widget.studentId;
+        : currentUser = pref.getString('school');
 
     setState(() {
       if (currentUser == widget.classId) {
-        sender = widget.classId
+        sender = widget.id
             .toString()
-            .substring(0, widget.classId.toString().indexOf("@"));
+            .substring(0, widget.id.toString().indexOf("@"));
       } else {
-        sender = widget.studentId.toString();
+        sender = widget.id
+            .toString()
+            .substring(0, widget.id.toString().indexOf("@"));
       }
     });
   }
@@ -73,8 +74,8 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             MessagesStream(
-              studentId: widget.studentId,
-              schoolId: id,
+              id: id,
+              classId: widget.classId,
             ),
             Container(
               decoration: kMessageContainerDecoration,
@@ -92,18 +93,28 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
                   ),
                   FlatButton(
                     onPressed: () async {
+                      var pref = Provider.of<SharedPreferences>(context);
+                      var user = Provider.of<FirebaseUser>(context);
+
+                      String topic = pref.getString('topic') ?? '';
+                      if (topic.isNotEmpty) {
+                        teacherNotification.sendNotification(
+                            'Message fron School', messageText, topic);
+                      }
+
                       if (messageText.isNotEmpty) {
                         var snap = await _firestore
-                            .document('schools/$id/chat/${widget.studentId}')
+                            .document('schools/$id/chat/${widget.classId}')
                             .get();
                         int count = snap.data['count'];
                         count = count + 1;
+                        pref.setInt(widget.classId, count);
                         _firestore
-                            .document('schools/$id/chat/${widget.studentId}')
+                            .document('schools/$id/chat/${widget.classId}')
                             .updateData({'count': count}).then((val) {
                           _firestore
                               .collection(
-                              'schools/$id/chat/${widget.studentId}/messages')
+                                  'schools/$id/chat/${widget.classId}/messages')
                               .add({
                             'text': messageText,
                             'sender': currentUser,
@@ -131,42 +142,43 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
 }
 
 class MessagesStream extends StatelessWidget {
-  final studentId, schoolId;
+  final id, classId;
 
-  MessagesStream({this.schoolId, this.studentId});
+  MessagesStream({this.id, this.classId});
 
   @override
   Widget build(BuildContext context) {
     var pref = Provider.of<SharedPreferences>(context);
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore
-          .collection('schools/$schoolId/chat/$studentId/messages')
+          .collection('schools/$id/chat/$classId/messages')
           .orderBy('timestamp', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!(snapshot.hasData)) {
+        var messages = snapshot.data.documents;
+        List<MessageBubble> messageBubbles = [];
+
+        if (!(snapshot.hasData && snapshot.data != null)) {
+          messages = snapshot.data.documents;
+
           return Container(
             child: Center(
               child: CircularProgressIndicator(),
             ),
           );
         }
-
-        final messages = snapshot.data.documents;
-        List<MessageBubble> messageBubbles = [];
-
         for (var message in messages) {
           final messageText = message.data['text'];
           final messageSender = message.data['sender'];
-
+          final messageTime = message.data['timestamp'];
+          if (currentUser == messageSender) {}
           final messageWidget = MessageBubble(
             messageText: messageText,
-            messageSender: messageSender,
+            messageSender: messageSender ?? "@",
             isMe: currentUser == messageSender,
           );
           messageBubbles.add(messageWidget);
         }
-
         return Expanded(
           child: ListView(
             reverse: true,
@@ -192,32 +204,29 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var pref = Provider.of<SharedPreferences>(context);
     return Padding(
       padding: const EdgeInsets.all(10.0),
       child: Column(
         crossAxisAlignment:
-        isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          messageSender.contains('@') ? Text(
-              messageSender.substring(0, messageSender.indexOf('@'))) : Text(
-              '${pref.getString('studentName')}'),
+          Text(messageSender.substring(0, messageSender.indexOf("@")) ?? ""),
           Material(
             borderRadius: isMe
                 ? BorderRadius.only(
-                topLeft: Radius.circular(30.0),
-                bottomRight: Radius.circular(30.0),
-                bottomLeft: Radius.circular(30.0))
+                    topLeft: Radius.circular(30.0),
+                    bottomRight: Radius.circular(30.0),
+                    bottomLeft: Radius.circular(30.0))
                 : BorderRadius.only(
-                topRight: Radius.circular(30.0),
-                bottomRight: Radius.circular(30.0),
-                bottomLeft: Radius.circular(30.0)),
+                    topRight: Radius.circular(30.0),
+                    bottomRight: Radius.circular(30.0),
+                    bottomLeft: Radius.circular(30.0)),
             elevation: 5.0,
             color: isMe ? Colors.blue.shade100 : Colors.indigo.shade100,
             child: Padding(
               padding:
-              const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+                  const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
               child: Text(messageText),
             ),
           ),

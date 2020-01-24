@@ -131,12 +131,15 @@ class _StudentPanelState extends State<StudentPanel> {
     );
   }
 
-  signIn(s, f, String m, id, SharedPreferences pref) async {
+  signIn(String s, String f, String m, id, SharedPreferences pref) async {
     var database = Firestore.instance.collection('schools')
         .document(id)
         .collection('students');
 
-    var snap = await database.where('id', isEqualTo: s + f + m)
+
+    var snap = await database.where('name', isEqualTo: s).where(
+        'fName', isEqualTo: f)
+        .where('mName', isEqualTo: m)
         .getDocuments();
 
     print(s + f + m);

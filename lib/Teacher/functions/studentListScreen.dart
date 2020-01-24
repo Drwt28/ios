@@ -40,6 +40,7 @@ class _StudentListPageState extends State<StudentListPage> {
                     .collection('schools')
                     .document(pref.getString('school'))
                     .collection('students')
+                    .orderBy('name')
                     .where('classId', isEqualTo: user.email)
                     .snapshots(),
                 builder: (context, query) {

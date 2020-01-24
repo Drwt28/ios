@@ -1,12 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:school_magna/Principal/CreateChatPage.dart';
 import 'package:school_magna/Principal/notices.dart';
 import 'package:school_magna/Principal/principal_chat_screen.dart';
 import 'package:school_magna/Principal/visual_data_screen.dart';
 import 'package:school_magna/Services/Teacher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../main.dart';
 
 class PrincipalHomeScreen extends StatefulWidget {
@@ -20,13 +18,11 @@ class _PrincipalHomeScreenState extends State<PrincipalHomeScreen> {
   PageController controller = PageController();
   ScrollController listViewController = ScrollController();
 
-
   final List<String> _childrenText = ['Home', 'Chat', 'Notice'];
 
   Teacher teacher = Teacher();
 
   int currentItem = 0;
-
 
   int _currentIndex = 0;
   final List<Widget> _children = [
@@ -75,7 +71,6 @@ class _PrincipalHomeScreenState extends State<PrincipalHomeScreen> {
                                   Container(
                                     child: Wrap(
                                       children: <Widget>[
-
                                         ListTile(
                                           leading: Icon(Icons.access_alarm),
                                           title: Text('Recent Activity'),
@@ -96,8 +91,7 @@ class _PrincipalHomeScreenState extends State<PrincipalHomeScreen> {
                                                     context,
                                                     MaterialPageRoute(
                                                         builder: (context) =>
-                                                            MyApp()
-                                                    ));
+                                                            MyApp()));
                                               });
                                             });
                                           },
@@ -120,13 +114,9 @@ class _PrincipalHomeScreenState extends State<PrincipalHomeScreen> {
                         _currentIndex = val;
                       });
                     },
-                    itemBuilder: (context, i) => _children[i]
-
-                )
-            )
+                    itemBuilder: (context, i) => _children[i]))
           ],
-        )
-    );
+        ));
   }
 
   buildTopBarText(text, i) {
@@ -139,8 +129,8 @@ class _PrincipalHomeScreenState extends State<PrincipalHomeScreen> {
         child: Padding(
           padding: const EdgeInsets.all(15.0),
           child: Text(
-            text,
-            style: TextStyle(fontSize: 15, color: Colors.black54),
+            text.toString().toUpperCase(),
+            style: TextStyle(fontSize: 16, color: Colors.black54),
           ),
         ),
       ),
@@ -152,15 +142,13 @@ class _PrincipalHomeScreenState extends State<PrincipalHomeScreen> {
   ).createShader(Rect.fromLTWH(0.0, 0.0, 100, 10.0));
 
   buildTopBarSelectedText(text, int i) {
-    print(controller.page);
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Text(
-          text,
+          text.toString().toUpperCase(),
           style: TextStyle(
-              fontSize: 36,
+              fontSize: 30,
               fontWeight: FontWeight.w800,
               foreground: Paint()
                 ..shader = linearGradient),

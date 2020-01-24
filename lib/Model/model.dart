@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:school_magna/Services/Student.dart';
 
 class CustomWidgets {
 //teacher home pannel card
@@ -91,14 +92,7 @@ class CustomWidgets {
           shape:
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           child: Container(
-            height: MediaQuery
-                .of(context)
-                .size
-                .height * 0.1,
-            width: MediaQuery
-                .of(context)
-                .size
-                .width * 0.8,
+
             decoration: BoxDecoration(
                 gradient: LinearGradient(colors: [startColor, endColor]),
                 borderRadius: BorderRadius.circular(10)),
@@ -108,7 +102,7 @@ class CustomWidgets {
                 Flexible(
                   flex: 3,
                   child: Padding(
-                    padding: const EdgeInsets.all(28.0),
+                    padding: const EdgeInsets.all(22.0),
                     child: Hero(
                       tag: tag,
                       child: Image(
@@ -121,7 +115,7 @@ class CustomWidgets {
                   flex: 1,
                   child: Text(
                     tit,
-                    style: TextStyle(fontSize: 23, color: Colors.white),
+                    style: TextStyle(fontSize: 22, color: Colors.white),
                   ),
                 )
               ],
@@ -230,42 +224,61 @@ class CustomWidgets {
           height: MediaQuery
               .of(context)
               .size
-              .height * 0.15,
+              .height * 0.18,
           width: MediaQuery.of(context).size.width * 0.8,
           decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [startColor, endColor]),
-              borderRadius: BorderRadius.circular(10)),
+
+
+              color: Colors.indigo,
+              borderRadius: BorderRadius.circular(30)),
           padding: EdgeInsets.all(10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Flexible(
-                flex: 1,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      name,
-                      style: TextStyle(fontSize: 24, color: Colors.white),
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Text(
-                      address,
-                      style: TextStyle(color: Colors.white),
-                    )
-                  ],
-                ),
-              ),
+
               Flexible(
                 flex: 1,
                 child: Hero(
                   tag: i,
-                  child: CircleAvatar(
-                    backgroundColor: Colors.white,
-                    backgroundImage: NetworkImage(logo),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Container(
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle, color: Colors.blue
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(3.0),
+                        child: CircleAvatar(
+                          radius: 25,
+                          foregroundColor: Colors.indigo,
+                          backgroundColor: Colors.white,
+                          backgroundImage: NetworkImage(logo),
+                        ),
+                      ),
+                    ),
                   ),
+                ),
+              ),
+              Flexible(
+                flex: 1,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                  children: <Widget>[
+                    Text(name, style: TextStyle(color: Colors.white,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 20),
+                      textAlign: TextAlign.start,),
+
+
+                    buildIconRow(Icons.school, name),
+
+
+                    buildIconRow(Icons.location_on, address)
+
+                  ],
                 ),
               ),
             ],
@@ -273,6 +286,16 @@ class CustomWidgets {
         ));
   }
 
+  static buildIconRow(IconData icon, String text) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: <Widget>[
+        Icon(icon, color: Colors.white, size: 18,)
+        , SizedBox(width: 10,),
+        Text(text, style: TextStyle(color: Colors.white),)
+      ],
+    );
+  }
   static ShowDialog(BuildContext context, Widget icon, content) {
     showDialog(
         context: context,

@@ -10,9 +10,7 @@ import 'package:school_magna/Teacher/teacherHome.dart';
 
 class SelectionPanel extends StatelessWidget {
   int i;
-
   SelectionPanel(this.i);
-
   Shader linearGradient = LinearGradient(
     colors: <Color>[Colors.lightBlue, Colors.indigo],
   ).createShader(Rect.fromLTWH(0.0, 0.0, 100, 10.0));
@@ -20,9 +18,7 @@ class SelectionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var sharedPreferences = Provider.of<SharedPreferences>(context);
-
     String id = sharedPreferences.getString('school') ?? '';
-
     id = id.substring(0, id.indexOf("@")).toUpperCase();
 
     return Scaffold(
@@ -43,7 +39,7 @@ class SelectionPanel extends StatelessWidget {
             id,
 
             style: TextStyle(
-              fontWeight: FontWeight.w700, fontSize: 27, foreground: Paint()
+              fontWeight: FontWeight.w700, fontSize: 18, foreground: Paint()
               ..shader = linearGradient,)),
         ),
 

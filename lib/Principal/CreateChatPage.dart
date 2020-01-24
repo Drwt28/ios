@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:school_magna/Notification/Notification.dart';
 import 'package:school_magna/Teacher/TeacherChatPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,6 +11,8 @@ class CreateChatListPage extends StatefulWidget {
 }
 
 class _CreateChatListPageState extends State<CreateChatListPage> {
+  NoticationService _noticationService = NoticationService();
+
   @override
   Widget build(BuildContext context) {
     var pref = Provider.of<SharedPreferences>(context);
@@ -37,26 +40,31 @@ class _CreateChatListPageState extends State<CreateChatListPage> {
     return ListView.builder(
         itemCount: snap.length,
         itemBuilder: (context, i) => ListTile(
-              title: Text(snap[i].data['teacherName']),
-              subtitle:
-                  Text(snap[i].data['className'] + snap[i].data['section']),
-              trailing: Icon(Icons.message, color: Colors.indigo),
-              onTap: () {
-                createChatDocument(snap[i].documentID, principalId, schoolId);
-              },
-            ));
+          title: Text(snap[i].data['teacherName']),
+          subtitle:
+          Text(snap[i].data['className'] + snap[i].data['section']),
+          trailing: Icon(Icons.message, color: Colors.indigo),
+          onTap: () {
+            createChatDocument(snap[i].documentID, principalId, schoolId);
+          },
+        ));
   }
 
-
-  void createChatDocument(
-      String documentID, String principalId, String schoolId) {
+  void createChatDocument(String documentID, String principalId, String schoolId) {
     String id = documentID;
     DocumentReference ref =
     Firestore.instance.document('schools/$schoolId/chat/$documentID');
-    print(documentID);
-    print(principalId);
-
     List<String> users = [principalId, documentID];
+
+    var pref = Provider.of<SharedPreferences>(context);
+    String topic =
+        id.substring(0, id.indexOf("@")) +
+            documentID.substring(0, documentID.indexOf("@"));
+    _noticationService.saveUserToken(topic);
+
+    topic = documentID.substring(0, documentID.indexOf("@")) +
+        id.substring(0, id.indexOf("@"));
+    pref.setString('topic', topic);
 
     ref
         .setData(({'users': users, 'count': 0}))
@@ -65,7 +73,7 @@ class _CreateChatListPageState extends State<CreateChatListPage> {
       Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-              builder: (context) => ChatScreen(classId: id, id: id)));
+              builder: (context) => ChatScreen(classId: id, id: principalId)));
     });
   }
 }

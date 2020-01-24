@@ -1,17 +1,12 @@
-import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:school_magna/Model/model.dart';
-import 'package:school_magna/SpalshScreen.dart';
-import 'package:school_magna/Student/StudentInfo/Homework/detailHomeWorkPage.dart';
 import 'package:school_magna/Principal/principal_page.dart';
-import 'package:school_magna/Student/StudentInfo/student_home_page.dart';
+import 'package:school_magna/StartScreen/SchoolsList.dart';
 import 'package:school_magna/Student/studentHomeScreen.dart';
-import 'package:school_magna/Teacher/functions/homeWork.dart';
 import 'package:school_magna/Teacher/teacherHome.dart';
 import 'package:school_magna/selectPanel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -46,8 +41,8 @@ void main() {
     child: MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+          fontFamily: 'monsterat',
           backgroundColor: Colors.white,
-
           appBarTheme: AppBarTheme(
               color: Colors.white,
               elevation: 0,
@@ -84,15 +79,11 @@ class _MyAppState extends State<MyApp> {
     checkForLogin();
   }
 
-
   @override
   Widget build(BuildContext context) {
     var pref = Provider.of<SharedPreferences>(context);
 
-    return WillPopScope(
-        onWillPop: _onWillPop,
-        child: buildPage()
-    );
+    return WillPopScope(onWillPop: _onWillPop, child: SchoolsListScreen());
   }
 
   Widget buildSchoolListcard(int i, List<DocumentSnapshot> documents) {
@@ -104,10 +95,8 @@ class _MyAppState extends State<MyApp> {
           sharedPreferences
               .setString("school", documents[i]['id'])
               .then((bool val) {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => SelectionPanel(i)));
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => SelectionPanel(i)));
           });
         },
         child: CustomWidgets.SchoolPannelCard(
@@ -125,9 +114,8 @@ class _MyAppState extends State<MyApp> {
     var user = await auth.currentUser();
 
     if (user != null) {
-      Navigator.pushReplacement(context, MaterialPageRoute(
-          builder: (context) => TeacherHomePage()
-      ));
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => TeacherHomePage()));
     }
   }
 
@@ -136,7 +124,8 @@ class _MyAppState extends State<MyApp> {
       context: context,
       builder: (context) =>
       new AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         title: new Text('Are you sure?'),
         content: new Text('Do you want to exit an App'),
         actions: <Widget>[
@@ -150,7 +139,8 @@ class _MyAppState extends State<MyApp> {
           ),
         ],
       ),
-    )) ?? false;
+    )) ??
+        false;
   }
 
   Widget buildPage() {
@@ -158,11 +148,9 @@ class _MyAppState extends State<MyApp> {
 
     if (pref.getString('Student') != null) {
       return StudentHome();
-    }
-    else if (pref.getString('Principal') != null) {
+    } else if (pref.getString('Principal') != null) {
       return PrincipalHomeScreen();
-    }
-    else {
+    } else {
       return Scaffold(
         body: Center(
           child: StreamBuilder<QuerySnapshot>(
@@ -173,18 +161,16 @@ class _MyAppState extends State<MyApp> {
                 slivers: <Widget>[
                   SliverAppBar(
                     actions: <Widget>[
-                      IconButton(icon: Icon(Icons.search, color: Colors.white)
-
-                        , onPressed: () {
-
-                        },)
+                      IconButton(
+                        icon: Icon(Icons.search, color: Colors.white),
+                        onPressed: () {},
+                      )
                     ],
                     floating: true,
-                    expandedHeight:
-                    MediaQuery
+                    expandedHeight: MediaQuery
                         .of(context)
                         .size
-                        .height * 0.34,
+                        .height * 0.50,
                     flexibleSpace: FlexibleSpaceBar(
                       centerTitle: true,
                       collapseMode: CollapseMode.pin,
@@ -193,19 +179,17 @@ class _MyAppState extends State<MyApp> {
                       ),
                       background: Container(
                         decoration: BoxDecoration(
-                            color: Colors.blue,
+                            color: Colors.indigo,
                             borderRadius: BorderRadius.only(
                                 bottomLeft: Radius.circular(50),
                                 bottomRight: Radius.circular(50))),
                       ),
                     ),
-
                   ),
                   SliverList(
-                    delegate:
-                    SliverChildBuilderDelegate((context, i) {
-                      return buildSchoolListcard(i,
-                          snapshots.data.documents);
+                    delegate: SliverChildBuilderDelegate((context, i) {
+                      return buildSchoolListcard(
+                          i, snapshots.data.documents);
                     }, childCount: snapshots.data.documents.length),
                   )
                 ],

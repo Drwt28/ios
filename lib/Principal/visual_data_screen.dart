@@ -4,12 +4,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 //student class
 class Attendence {
   Attendence({this.week, this.number});
+
   final String week;
   final int number;
 }
+
 class Visualization extends StatefulWidget {
   @override
   _VisualizationState createState() => _VisualizationState();
@@ -18,10 +21,17 @@ class Visualization extends StatefulWidget {
 var pref;
 String id = pref.get('school');
 String className;
+
 class _VisualizationState extends State<Visualization> {
-  final List<Attendence> data = List<Attendence>();
   int _value = 1;
-  List<List<Attendence>> list = new List<List<Attendence>>();
+  List<bool> isSelected = [true, false];
+  int indexValue;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     pref = Provider.of<SharedPreferences>(context);
@@ -52,10 +62,44 @@ class _VisualizationState extends State<Visualization> {
                   Expanded(
                     flex: 3,
                     child: Container(
-                      child: buildClassClip(snapshot.data.documents),
+                      child: buildClassClip(),
                     ),
                   ),
                 ],
+              ),
+              Container(
+                height: 35.0,
+                alignment: Alignment.topRight,
+                child: ToggleButtons(
+                  disabledColor: Colors.grey,
+                  borderRadius: BorderRadius.circular(3.0),
+                  fillColor: Colors.indigo,
+                  children: <Widget>[
+                    Text(
+                      'Week',
+                      style: TextStyle(color: Colors.black87),
+                    ),
+                    Text(
+                      'Month',
+                      style: TextStyle(color: Colors.black87),
+                    ),
+                  ],
+                  isSelected: isSelected,
+                  onPressed: (int index) {
+                    setState(() {
+                      for (int indexBtn = 0;
+                      indexBtn < isSelected.length;
+                      indexBtn++) {
+                        if (indexBtn == index) {
+                          isSelected[indexBtn] = !isSelected[indexBtn];
+                          indexValue = index;
+                        } else {
+                          isSelected[indexBtn] = false;
+                        }
+                      }
+                    });
+                  },
+                ),
               ),
               !(snapshot.hasData && snapshot.data.documents.length > 0)
                   ? Container(
@@ -82,57 +126,20 @@ class _VisualizationState extends State<Visualization> {
         return Container(
             child: Column(
               children: <Widget>[
-                Text('Section: ' + '${documents[index]['section']}',
-                  style: TextStyle(fontWeight: FontWeight.w500),),
-                buildCard(index, context, documents[index]['section'])
+                Text(
+                  'Section: ' + '${documents[index]['section']}',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                indexValue == 0
+                    ? showWeekData(documents[index])
+                    : showMonthData(documents[index])
               ],
             ));
       }),
     );
   }
 
-  buildCard(int index, BuildContext context, String section) {
-    return StreamBuilder<QuerySnapshot>(
-        stream: Firestore.instance
-            .collection('schools/$id/classes')
-            .where('className', isEqualTo: className)
-            .where('section', isEqualTo: section)
-            .snapshots(),
-        builder: (context, snapshot) {
-          try {
-            list.insert(index, getDataFromMap(
-                snapshot.data.documents[0].data['attendenceList']));
-          } catch (e) {
-            list.add(getDataFromMap(
-                snapshot.data.documents[0].data['attendenceList']));
-          }
-          return Card(
-            margin: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.0)),
-            elevation: 3.0,
-            child: Container(
-              height: MediaQuery
-                  .of(context)
-                  .size
-                  .height * .5,
-              child: charts.BarChart(
-                _createVisualizationData(),
-                animate: true,
-                behaviors: [
-                  charts.ChartTitle('Number of Student',
-                      behaviorPosition: charts.BehaviorPosition.start),
-                  charts.ChartTitle('Weeks',
-                      behaviorPosition: charts.BehaviorPosition.bottom)
-                ],
-              ),
-            ),
-          );
-        }
-    );
-  }
-
-  Wrap buildClassClip(List<DocumentSnapshot> documents) {
+  Wrap buildClassClip() {
     return Wrap(
       direction: Axis.horizontal,
       spacing: 8.0,
@@ -156,40 +163,89 @@ class _VisualizationState extends State<Visualization> {
       ).toList(),
     );
   }
-  List<charts.Series<Attendence, String>> _createVisualizationData() {
-    return [
-      charts.Series<Attendence, String>(
-          id: 'StudentAttendence',
-          colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
-          domainFn: (Attendence dataPoint, _) => dataPoint.week,
-          measureFn: (Attendence dataPoint, _) => dataPoint.number,
-          data: data)
-    ];
-  }
-  List<Attendence> getDataFromMap(Map map) {
+
+  List<Attendence> getData(DocumentSnapshot document) {
     List<Attendence> attendence = [];
-    String s = map.toString();
-    int i = map.toString().indexOf(',');
-    while (i > 0) {
-      try {
-        String l = s.substring(0, i);
-        attendence.add(Attendence(
-            week: l.substring(0, l.indexOf(':')).replaceFirst('{', ""),
-            number: map[l
-                .substring(0, l.indexOf(':'))
-                .toString()
-                .replaceFirst("{", "")
-                .trim()]));
-        s = s.substring(i + 1, s.length - 1);
-        i = s.indexOf(',');
-      } catch (e) {
-        break;
-      }
+    List keys = document.data['attendenceKey'] ?? List();
+    Map map = document.data['attendenceList'];
+    for (var a in keys) {
+      attendence.add(Attendence(week: a, number: map[a]));
     }
-    for (var a in attendence) {
-      print(a.week + '${a.number}');
-      data.add(Attendence(week: a.week, number: a.number));
-    }
+
     return attendence;
+  }
+
+  showWeekData(DocumentSnapshot document) {
+    List<Attendence> weekData = getData(document);
+    List<List<Attendence>> weekList = new List<List<Attendence>>();
+    List<charts.Series<Attendence, String>> _createVisualizationData() {
+      return [
+        charts.Series<Attendence, String>(
+            id: 'StudentAttendence',
+            colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
+            domainFn: (Attendence dataPoint, _) => dataPoint.week,
+            measureFn: (Attendence dataPoint, _) => dataPoint.number,
+            data: weekData),
+      ];
+    }
+
+    weekList.add(getData(document));
+    return Card(
+      color: Colors.blue.shade50,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      child: Container(
+        height: MediaQuery
+            .of(context)
+            .size
+            .height * .4,
+        child: charts.BarChart(
+          _createVisualizationData(),
+          animate: true,
+          behaviors: [
+            charts.ChartTitle('Number of Student',
+                behaviorPosition: charts.BehaviorPosition.start),
+            charts.ChartTitle('Weeks',
+                behaviorPosition: charts.BehaviorPosition.bottom)
+          ],
+        ),
+      ),
+    );
+  }
+
+  showMonthData(document) {
+    List<Attendence> monthData = getData(document);
+    List<List<Attendence>> monthList = new List<List<Attendence>>();
+    List<charts.Series<Attendence, String>> _createVisualizationData() {
+      return [
+        charts.Series<Attendence, String>(
+            id: 'StudentAttendence',
+            colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
+            domainFn: (Attendence dataPoint, _) => dataPoint.week,
+            measureFn: (Attendence dataPoint, _) => dataPoint.number,
+            data: monthData),
+      ];
+    }
+
+    monthList.add(getData(document));
+    return Card(
+      color: Colors.blue.shade50,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      child: Container(
+        height: MediaQuery
+            .of(context)
+            .size
+            .height * .4,
+        child: charts.BarChart(
+          _createVisualizationData(),
+          animate: true,
+          behaviors: [
+            charts.ChartTitle('Number of Student',
+                behaviorPosition: charts.BehaviorPosition.start),
+            charts.ChartTitle('Weeks',
+                behaviorPosition: charts.BehaviorPosition.bottom)
+          ],
+        ),
+      ),
+    );
   }
 }

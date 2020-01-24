@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:school_magna/Notification/TeacherNotification.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class feesNotificationPage extends StatefulWidget {
@@ -11,8 +12,10 @@ class feesNotificationPage extends StatefulWidget {
 }
 
 class _feesNotificationPageState extends State<feesNotificationPage> {
-  List<String> studentId = [];
-  List<bool> checkList = [];
+  TeacherNotification _notification = TeacherNotification();
+  List<String> studentId;
+
+  List<bool> CheckList = [];
 
   FirebaseMessaging fcm = FirebaseMessaging();
 
@@ -34,7 +37,7 @@ class _feesNotificationPageState extends State<feesNotificationPage> {
               child: SizedBox(
                 height: 90,
                 width: 90,
-                child: buildTopBox(),
+                child: Center(child: buildTopBox()),
               ),
             ),
             Flexible(
@@ -44,6 +47,7 @@ class _feesNotificationPageState extends State<feesNotificationPage> {
                     .collection('schools')
                     .document(pref.getString('school'))
                     .collection('students')
+                    .orderBy('name')
                     .where('classId', isEqualTo: user.email)
                     .snapshots(),
                 builder: (context, query) {
@@ -59,9 +63,33 @@ class _feesNotificationPageState extends State<feesNotificationPage> {
           onPressed: () {
             int i = 0;
             for (var c in studentId) {
-
-
+              sendFessNotification(c);
+              i++;
             }
+            if (i == studentId.length) {
+              showDialog(
+                  context: context,
+                  child: AlertDialog(
+                    title: Icon(
+                      Icons.done_all,
+                      color: Colors.greenAccent,
+                      size: 50,
+                    ),
+                    shape:
+                    RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    content: Text('Notification Sent to Selected Students'),
+                    actions: <Widget>[
+                      FlatButton(
+                        child: Text('ok'),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      )
+                    ],
+                  ));
+            }
+
           },
           child: Icon(Icons.check),
         ));
@@ -81,38 +109,75 @@ class _feesNotificationPageState extends State<feesNotificationPage> {
   }
 
   buildNotificationList(List<DocumentSnapshot> documents) {
-    checkList.clear();
-    studentId.clear();
-    int i = 0;
-    for (var c in documents) {
-      checkList.add(false);
-      studentId.add(documents[i].documentID);
-      i++;
-    }
+    CheckList = List.generate(documents.length, (i) => true);
+
+    studentId = List.generate(documents.length, (i) => documents[i].documentID);
 
     return ListView.builder(
         itemCount: documents.length,
         itemBuilder: (context, i) {
-          return CheckboxListTile(
-            value: checkList[i],
-            onChanged: (val) {
-              setState(() {
-                if (checkList[i] == false) {
-                  studentId.add(documents[i]['id']);
-                  checkList[i] = true;
-                } else {
-                  studentId.remove(documents[i]['id']);
-                  checkList[i] = false;
-                }
-                print(studentId);
-              });
+          return NotificationListTile(
+            name: documents[i].data['name'],
+            fathersName: documents[i]['fName'],
+            onChange: (val) {
+              if (val) {
+                studentId.add(documents[i].documentID);
+              }
+              else {
+                studentId.remove(documents[i].documentID);
+              }
             },
-            title: Text(i.toString() + documents[i]['name']),
-            subtitle: Text(documents[i]['fName']),
-            activeColor: Colors.indigo,
           );
         });
   }
 
-  sendFessNotification(String id) {}
+  sendFessNotification(String id) {
+    _notification.sendNotification(
+        'Fee Pending', 'Your Student fees is pending ', id);
+  }
+
+
 }
+
+class NotificationListTile extends StatefulWidget {
+
+  String name, fathersName;
+
+  final Function(bool) onChange;
+
+
+  @override
+  _NotificationListTileState createState() => _NotificationListTileState();
+
+
+  NotificationListTile({@required this.name, this.fathersName, this.onChange});
+
+}
+
+class _NotificationListTileState extends State<NotificationListTile> {
+
+  bool dec = true;
+
+
+  @override
+  Widget build(BuildContext context) {
+    return CheckboxListTile(
+      value: dec,
+      onChanged: (bool value) {
+        widget.onChange(!dec);
+
+        setState(() {
+          if (dec == false) {
+            dec = true;
+          } else {
+            dec = false;
+          }
+        });
+      },
+      title: Text(widget.name),
+      subtitle: Text(widget.fathersName),
+      activeColor: Colors.indigo,
+    );
+  }
+}
+

@@ -1,20 +1,22 @@
+import 'package:school_magna/Notification/Notification.dart';
+
 class Class {
+  static NoticationService noticationService = NoticationService();
   String teacherName, className, section, classId, notice;
   Map<dynamic, dynamic> attendeceData;
 
-  Class(
-      {this.teacherName,
-      this.className,
-      this.section,
-      this.classId,
-      this.notice,
-      this.studentId,
-      this.subjectList,
-      this.lastAttendence,
-      this.presentStudents,
-      this.homeWorkList,
-        this.attendenceList
-      });
+  Class({this.teacherName,
+    this.className,
+    this.section,
+    this.classId,
+    this.notice,
+    this.studentId,
+    this.subjectList,
+    this.lastAttendence,
+    this.presentStudents,
+    this.homeWorkList,
+    this.attendenceList
+  });
 
   List<String> studentId;
 
@@ -28,6 +30,11 @@ class Class {
   Map<DateTime, int> attendenceList;
 
   static Map<String, dynamic> convertToMap(Class temp) {
+    String tokken = '';
+    noticationService.getuserTokken().then((val) {
+      tokken = val;
+    });
+
     Map<String, dynamic> map = Map();
     map['classId'] = temp.classId ?? '';
     map['teacherName'] = temp.teacherName ?? '';
@@ -40,6 +47,7 @@ class Class {
     map['presentStudents'] = temp.presentStudents ?? 0;
     map['homeWorkList'] = temp.homeWorkList ?? List<homeWork>();
     map['attendenceList'] = temp.attendenceList ?? Map<DateTime, int>();
+    map['tokken'] = tokken;
     return map;
   }
 

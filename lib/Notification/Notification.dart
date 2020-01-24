@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NoticationService {
   final Firestore _db = Firestore.instance;
   FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+  SharedPreferences pref;
 
   void firebaseCloudMessaging_Listeners() {
     if (Platform.isIOS) iOS_Permission();
@@ -30,6 +32,22 @@ class NoticationService {
         .listen((IosNotificationSettings settings) {
       print("Settings registered: $settings");
     });
+  }
+
+  setChatNotofication() async {
+    String topic = await _firebaseMessaging.getToken();
+
+    saveUserToken(topic);
+
+    pref = await SharedPreferences.getInstance();
+
+    pref.setString('topic', topic);
+  }
+
+  Future<String> getuserTokken() async {
+    String tokken = await _firebaseMessaging.getToken();
+
+    return tokken;
   }
 
   saveUserToken(String topic) async {

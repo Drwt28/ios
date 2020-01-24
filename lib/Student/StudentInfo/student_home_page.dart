@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
+import 'package:school_magna/Notification/Notification.dart';
+import 'package:school_magna/Student/FullScreen.dart';
 import 'package:school_magna/Student/StudentChatPage.dart';
-import 'package:school_magna/Teacher/TeacherChatPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
@@ -16,11 +16,19 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   bool dec = false;
+  final List ImageList = [
+    'https://firebasestorage.googleapis.com/v0/b/schoolmagnatest.appspot.com/o/Events%2Feventstart.jfif?alt=media&token=b75da7c5-0b1c-4fbc-9351-23fd47fcc650',
+    'https://firebasestorage.googleapis.com/v0/b/schoolmagnatest.appspot.com/o/Events%2FEvent1.jpg?alt=media&token=6893510b-399d-4eae-a2fd-36beb095d4e0',
+    'https://firebasestorage.googleapis.com/v0/b/schoolmagnatest.appspot.com/o/Events%2Fevent2.jfif?alt=media&token=62a7038d-ce35-4c95-913e-1adc697ba692'
+  ];
+  bool chatLoading = false;
 
-  String classTeacher = "";
+  NoticationService _noticationService = NoticationService();
 
-  String ClassName = "";
-  String notice = "";
+  String classTeacher;
+
+  String ClassName;
+  String notice;
 
   @override
   Widget build(BuildContext context) {
@@ -51,88 +59,101 @@ class _HomePageState extends State<HomePage> {
                 child: ListView(
                   scrollDirection: Axis.vertical,
                   children: <Widget>[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: <Widget>[
-                        SizedBox(
-                          height: 40,
-                          width: 40,
-                          child: Image(
-                            image:
-                            AssetImage('assets/teacher/student.png'),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 10,
-                        ),
-                        Text(
-                          snapshot.data.data['name'],
-                          style: TextStyle(fontSize: 25),
-                        )
-                      ],
-                    ),
-                    ListTile(
-                        title: Container(
-                          width: 50,
-                          height: 50,
-                        ),
-                        subtitle: Column(
-                          children: <Widget>[
-                            buildDashText('Class Teacher:', classTeacher),
-                            buildDashText('Class :', className),
-                            buildDashText("Roll No :",
-                                snapshot.data.data['rollNo']),
-                            buildDashText("Father's Name :",
-                                snapshot.data.data['fName']),
-                            buildDashText("Mother's Name :",
-                                snapshot.data.data['mName']),
-                          ],
-                        )),
-                    Card(
-                      borderOnForeground: true,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      child: StreamBuilder<DocumentSnapshot>(
-                          stream: Firestore.instance
-                              .document(
-                              'schools/$schoolId/classes/$classId')
-                              .snapshots(),
-                          builder: (context, doc) {
-                            return !doc.hasData
-                                ? CircularProgressIndicator()
-                                : buildNotice();
-                          }),
-                    ),
+
+                    FutureBuilder<DocumentSnapshot>(
+                        future: getTeacherData(),
+                        builder: (context, doc) {
+                          return !doc.hasData
+                              ? Center(child: CircularProgressIndicator())
+                              : ListTile(
+                              title: Container(
+                                width: 50,
+                                height: 50,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: <Widget>[
+                                    SizedBox(
+                                      height: 40,
+                                      width: 40,
+                                      child: Image(
+                                        image: AssetImage(
+                                            'assets/teacher/student.png'),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 10,
+                                    ),
+                                    Text(
+                                      snapshot.data.data['name'],
+                                      style: TextStyle(fontSize: 25),
+                                    )
+                                  ],
+                                ),
+                              ),
+                              subtitle: Column(
+                                children: <Widget>[
+                                  buildDashText(
+                                      'Class Teacher:',
+                                      doc.data['teacherName'] ?? ''),
+                                  buildDashText('Class :', ClassName ??
+                                      pref.getString('classId').substring(
+                                          0,
+                                          pref
+                                              .getString('classId')
+                                              .indexOf('@'))),
+                                  buildDashText("Roll No :",
+                                      snapshot.data.data['rollNo']),
+                                  buildDashText("Father's Name :",
+                                      snapshot.data.data['fName']),
+                                  buildDashText("Mother's Name :",
+                                      snapshot.data.data['mName']),
+
+                                  buildNotice(doc)
+                                ],
+                              ));
+                        }),
                     SizedBox(
                       height: 10,
                     ),
                     Card(
+                      color: Colors.grey.shade100,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5)
-                      ),
-                      child: ListTile(
+                          borderRadius: BorderRadius.circular(5)),
+                      child: chatLoading
+                          ? Center(child: CircularProgressIndicator())
+                          : ListTile(
                         leading: SizedBox(
                           height: 40,
                           width: 40,
                           child: Image(
-                            image:
-                            AssetImage('assets/teacher/teacher.png'),
+                            image: AssetImage(
+                                'assets/teacher/teacher.png'),
                           ),
-                        ), title: Text('Chat With Class Teacher'),
+                        ),
+                        title: Text('Chat With Class Teacher'),
                         subtitle: Text('tap to see remarks'),
                         onTap: () {
-                          createChatDocument(snapshot.data.data['name'],
-                              snapshot.data.documentID, id, schoolId);
+                          String classId =
+                          snapshot.data.data['classId'];
+                          String studentid =
+                              snapshot.data.documentID;
+                          pref.setString('studentName',
+                              snapshot.data.data['name']);
+                          createChatDocument(studentid, classId,
+                              schoolId, snapshot.data.data['name']);
+
+//                          createChatDocument(snapshot.data.data['name'],
+//                              snapshot.data.documentID, id, schoolId);
                         },
                       ),
                     ),
-
                     SizedBox(
                       height: 10,
                     ),
                     SizedBox(
                       height: 400,
                       child: Card(
+                        color: Colors.grey.shade100,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(5)),
                         child: Column(
@@ -156,14 +177,9 @@ class _HomePageState extends State<HomePage> {
                                 pageSnapping: false,
                                 dragStartBehavior:
                                 DragStartBehavior.start,
-                                itemCount: 4,
-                                itemBuilder: (context, index) {
-                                  return Container(
-                                    color: Colors.blue[100],
-                                    child: Center(
-                                      child: Text('$index'),
-                                    ),
-                                  );
+                                itemCount: ImageList.length,
+                                itemBuilder: (context, i) {
+                                  return buildGalleryImage(i);
                                 },
                               ),
                             )
@@ -182,110 +198,46 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  buildNotice() {
-    return FutureBuilder(
-      future: getTeacherData(),
-      builder: (context, doc) =>
-      !(doc.hasData)
-          ? Padding(
-        padding: const EdgeInsets.all(2.0),
-        child: ListTile(
-          title: Text(
-            'Class Notice',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: Colors.indigo),
-          ),
-          subtitle: notice.isEmpty
-              ? Text(
-            'No notice yet from the school',
-            style: TextStyle(
-                fontSize: 18,
-                color: Colors.blueAccent,
-                fontWeight: FontWeight.w400),
-          )
-              : Text(
-                        notice,
-                        style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.blueAccent,
-                            fontWeight: FontWeight.w400),
-          ),
+  buildNotice(AsyncSnapshot<DocumentSnapshot> doc) {
+    return (doc.data['notice']
+        .toString()
+        .isEmpty)
+        ? ListTile(
+      title: Text(
+        'Class Notice',
+        textAlign: TextAlign.start,
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: Colors.indigo,
         ),
-      )
-          : Center(
-        child: CircularProgressIndicator(),
       ),
-    );
-  }
-
-  void _settingModalBottomSheet(context) {
-    showCupertinoModalPopup(
-        context: context,
-        builder: (BuildContext bc) {
-          return CupertinoActionSheet(
-            title: Text('Type your reply'),
-            message: CupertinoTextField(
-              enableInteractiveSelection: true,
-              placeholder: 'type reply',
-            ),
-            cancelButton: CupertinoButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                color: Colors.indigo,
-                child: Text('cancel')),
-            actions: <Widget>[
-              FlatButton(
-                splashColor: Colors.yellow,
-                onPressed: () {},
-                child: Text('The date of parents meeting'),
-              ),
-              FlatButton(
-                splashColor: Colors.yellow,
-                onPressed: () {},
-                child: Text('Template'),
-              ),
-              FlatButton(
-                splashColor: Colors.yellow,
-                onPressed: () {},
-                child: Text('This is wrong'),
-              )
-            ],
-          );
-        });
-  }
-
-  buildHomeWorkLayout(String title, content) {
-    print(title);
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Container(
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            gradient: LinearGradient(
-                colors: [Colors.blueAccent, Colors.indigoAccent])),
-        child: ListTile(
-          onTap: () {},
-          title: Text(
-            title,
-            style: TextStyle(fontSize: 18, color: Colors.white),
-          ),
-          subtitle: Text(
-            'Recieved at  $content',
-            style: TextStyle(color: Colors.white),
-          ),
-          trailing: Icon(
-            Icons.arrow_forward_ios,
-            color: Colors.white,
-            size: 20,
-          ),
+      subtitle: Text(
+        'No Notice Sended By School',
+        textAlign: TextAlign.center,
+        style: TextStyle(letterSpacing: 3.0, fontSize: 16.0),
+      ),
+    )
+        : Padding(
+      padding: EdgeInsets.all(2.0),
+      child: ListTile(
+        title: Text(
+          'ClassNotice',
+          textAlign: TextAlign.start,
+          style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Colors.indigo),
+        ),
+        subtitle: Text(
+          doc.data['notice'],
+          textAlign: TextAlign.center,
+          style: TextStyle(letterSpacing: 1.0, fontSize: 16.0),
         ),
       ),
     );
   }
+
 
   buildDashText(String title, val) {
     return Padding(
@@ -298,22 +250,25 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   title,
                   style: TextStyle(
-                      color: Colors.indigo,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16),
+                    color: Colors.indigo,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
                 )),
             Flexible(
                 flex: 1,
                 child: Text(val,
-                    style: TextStyle(color: Colors.black, fontSize: 16)))
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 17,
+                    )))
           ]),
     );
   }
 
-  String className = "";
-
   Future<DocumentSnapshot> getTeacherData() async {
-    SharedPreferences pref = await SharedPreferences.getInstance();
+    SharedPreferences pref = Provider.of<SharedPreferences>(context);
     String schoolId = pref.getString('school');
     String classId = pref.getString('classId');
 
@@ -321,37 +276,78 @@ class _HomePageState extends State<HomePage> {
         .document('schools/$schoolId/classes/$classId')
         .get();
 
-    setState(() {
-      notice = snap.data['notice'];
-      classTeacher = snap.data['teacherName'];
-      className = (snap.data['classSection'] + snap.data['section']);
-    });
-
     return snap;
   }
 
-  void createChatDocument(String name,
-      String documentID, String id, String schoolId) {
+  buildGalleryImage(int i) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    FullScreen(image: ImageList[i], tag: 'tag')));
+      },
+      child: Image(
+        fit: BoxFit.scaleDown,
+        image: NetworkImage(
+          ImageList[i],
+        ),
+        loadingBuilder: (context, child, progress) {
+          return progress == null
+              ? child
+              : Center(
+              child: LinearProgressIndicator(
+                backgroundColor: Colors.indigo,
+              ));
+        },
+      ),
+    );
+  }
+
+  createChatDocument(String documentID, String teacherId, String schoolId,
+      String name) async {
     String id = documentID;
     DocumentReference ref =
     Firestore.instance.document('schools/$schoolId/chat/$documentID');
-    print(documentID);
-    print(id);
+    List<String> users = [documentID, teacherId];
 
+    var pref = Provider.of<SharedPreferences>(context);
+    String topic = teacherId.substring(0, teacherId.indexOf("@")) + documentID;
+    _noticationService.saveUserToken(topic);
 
-    List<String> users = [id, documentID];
+    topic = documentID + teacherId.substring(0, teacherId.indexOf("@"));
+    pref.setString('topic', topic);
 
-    ref
-        .setData(({'users': users, 'count': 0}))
-        .then((val) => print('done'))
-        .then((val) {
-      Navigator.pushReplacement(
+    var snap = await ref.get();
+    if (!snap.exists) {
+      setState(() {
+        chatLoading = true;
+      });
+      ref
+          .setData(({'users': users, 'count': 0, 'name': name}))
+          .then((val) => print('done'))
+          .then((val) {
+        setState(() {
+          chatLoading = false;
+        });
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    StudentChatScreen(
+                        classId: teacherId, studentId: documentID)));
+      });
+    } else {
+      setState(() {
+        chatLoading = false;
+      });
+      Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => StudentChatScreen(classId: name, id: id)));
-    });
+              builder: (context) =>
+                  StudentChatScreen(
+                      classId: teacherId, studentId: documentID)));
+    }
   }
-
-
-
 }

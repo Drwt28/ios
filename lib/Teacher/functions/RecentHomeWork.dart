@@ -1,21 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 import 'package:provider/provider.dart';
 import 'package:school_magna/Model/model.dart';
+import 'package:school_magna/Services/Class.dart';
 import 'package:school_magna/Student/FullScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class DetailHomeWorkPage extends StatefulWidget {
-  List list;
+class TeacherRecentHomework extends StatefulWidget {
+  List list = [];
 
-  DetailHomeWorkPage({@required this.list});
+  TeacherRecentHomework({@required this.list});
 
   @override
-  _DetailHomeWorkPageState createState() => _DetailHomeWorkPageState();
+  _TeacherRecentHomeworkState createState() => _TeacherRecentHomeworkState();
 }
 
-class _DetailHomeWorkPageState extends State<DetailHomeWorkPage> {
+class _TeacherRecentHomeworkState extends State<TeacherRecentHomework> {
   PageController controller = PageController();
 
   ScrollController listViewController = ScrollController();
@@ -29,7 +33,6 @@ class _DetailHomeWorkPageState extends State<DetailHomeWorkPage> {
     'Thrusday',
     'Friday',
     'Saturday'
-        'Sunday'
   ];
 
   int currentItem;
@@ -37,41 +40,46 @@ class _DetailHomeWorkPageState extends State<DetailHomeWorkPage> {
   @override
   Widget build(BuildContext context) {
     print(widget.list);
-
     var pref = Provider.of<SharedPreferences>(context);
-
-    List subjectList = pref.getStringList('subjects');
-    print(subjectList);
+    var user = Provider.of<FirebaseUser>(context);
+    List subjectList = widget.list;
 
     String id = pref.getString('Student');
     String schoolId = pref.getString('school');
-    String classId = pref.getString('classId');
+    String classId = user.email;
     return StreamBuilder<DocumentSnapshot>(
         stream: Firestore.instance
             .document('schools/$schoolId/classes/$classId')
             .snapshots(),
         builder: (context, snapshot) {
           return Scaffold(
-            body: (snapshot.hasData)
-                ? ListView.builder(
-              scrollDirection: Axis.vertical,
-              itemCount: subjectList.length,
-              controller: controller,
-              itemBuilder: (context, i) =>
-              (snapshot
-                  .data.data[subjectList[i]] !=
-                  null)
-                  ? buildHomeworkPages(snapshot.data.data[subjectList[i]])
-                  : SizedBox(
-                  child: Card(
-                      child: ListTile(
-                        title: Text('${subjectList[i]}'),
-                        subtitle: Text('No HomeWork'),
-                      ))),
-            )
-                : Center(
-              child: CircularProgressIndicator(),
+            appBar: AppBar(
+              title: Text('Recent Homework'),
             ),
+            body: snapshot.hasData
+                ? ListView.builder(
+                    scrollDirection: Axis.vertical,
+                    itemCount: subjectList.length,
+                    controller: controller,
+                    itemBuilder: (context, i) => (snapshot
+                                .data.data[subjectList[i]] !=
+                            null)
+                        ? buildHomeworkPages(snapshot.data.data[subjectList[i]])
+                        : SizedBox())
+                : SizedBox(
+                    height: 200,
+                    width: 200,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        Image(
+                          image: AssetImage('assets/teacher/teacher.png'),
+                        ),
+                        Text('No HomeWork sent yet')
+                      ],
+                    ),
+                  ),
           );
         });
   }
@@ -95,6 +103,8 @@ class _DetailHomeWorkPageState extends State<DetailHomeWorkPage> {
   }
 
   buildTopBarSelectedText(text, int i) {
+    print(controller.page);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -122,8 +132,6 @@ class _DetailHomeWorkPageState extends State<DetailHomeWorkPage> {
         day: day, images: list, subject: subjectName, text: homeworkText);
 
     return Card(
-      elevation: 3.0,
-      color: Colors.grey.shade100,
       borderOnForeground: true,
       margin: EdgeInsets.all(5),
       child: ListTile(
@@ -137,10 +145,9 @@ class _DetailHomeWorkPageState extends State<DetailHomeWorkPage> {
           child: Column(
             children: <Widget>[
               Text(
-                "Publised on\t" + time,
+                "Publised on\t" + h.day + time,
                 textAlign: TextAlign.right,
-                style: TextStyle(
-                    fontWeight: FontWeight.w500, color: Colors.black87),
+                style: TextStyle(color: Colors.black),
               ),
               SizedBox(
                 height: 10,
@@ -152,19 +159,8 @@ class _DetailHomeWorkPageState extends State<DetailHomeWorkPage> {
                   tag: h.subject,
                   child: Image(
                     fit: BoxFit.fitWidth,
-                    width: MediaQuery
-                        .of(context)
-                        .size
-                        .width * .9,
+                    width: MediaQuery.of(context).size.width * .9,
                     image: NetworkImage(h.images[0]),
-                    loadingBuilder: (context, child, progress) {
-                      return progress == null
-                          ? child
-                          : Center(
-                          child: LinearProgressIndicator(
-                            backgroundColor: Colors.indigo,
-                          ));
-                    },
                   ),
                 ),
               ),
@@ -173,10 +169,7 @@ class _DetailHomeWorkPageState extends State<DetailHomeWorkPage> {
               ),
               Text(
                 h.text,
-                style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black,
-                    fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: 16, color: Colors.black),
               )
             ],
           ),
@@ -185,8 +178,7 @@ class _DetailHomeWorkPageState extends State<DetailHomeWorkPage> {
           Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) =>
-                      FullScreen(
+                  builder: (context) => FullScreen(
                         image: h.images[0],
                         tag: h.subject,
                       )));

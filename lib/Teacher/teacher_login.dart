@@ -30,11 +30,13 @@ class _teacher_loginState extends State<teacher_login> {
 
   @override
   initState() {
-    super.initState();
 
     _auth = FirebaseAuth.instance;
+    super.initState();
 
-    //   checkForSignIn();
+
+
+
   }
 
   Shader linearGradient = LinearGradient(
@@ -87,8 +89,9 @@ class _teacher_loginState extends State<teacher_login> {
             ),
             backgroundColor: Colors.white,
             body: SafeArea(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: ListView(
+                scrollDirection: Axis.vertical,
+                physics: BouncingScrollPhysics(),
                 children: <Widget>[
                   SizedBox(height: 130, width: 130, child: buildTopBox()),
                   (!snapshot.hasData)
@@ -238,7 +241,7 @@ class _teacher_loginState extends State<teacher_login> {
         if (designation == "Principal") {
           if (principalId.toLowerCase() == email.text.trim().toLowerCase() &&
               pass.toLowerCase() == password.text.trim().toLowerCase()) {
-            pref.setString('Principal', principalId.trim().toLowerCase()).then((
+            pref.setString('principal', principalId.trim().toLowerCase()).then((
                 val) {
               _noticationService.saveUserToken(
                   principalId.substring(0, principalId.indexOf("@")));
@@ -261,14 +264,16 @@ class _teacher_loginState extends State<teacher_login> {
         if (designation == 'Teacher') {
           _auth
               .signInWithEmailAndPassword(
-              email: email.text, password: password.text)
+              email: email.text.trim(), password: password.text.trim())
               .then((val) {
             String topic =
                 "N" + email.text.substring(0, email.text.indexOf("@"));
+
+
             _noticationService.saveUserToken(topic);
 
             Navigator.pushReplacement(context,
-                MaterialPageRoute(builder: (context) => TeacherHomePage()));
+                MaterialPageRoute(builder: (context) => classBuilderScreen()));
           }).catchError((error) {
             setState(() {
               dec = false;
@@ -323,5 +328,16 @@ class _teacher_loginState extends State<teacher_login> {
         )
       ],
     );
+  }
+
+
+  checkForSignIn() async {
+    var user = FirebaseAuth.instance.currentUser();
+
+    if (user != null) {
+      Navigator.pushReplacement(context, MaterialPageRoute(
+          builder: (context) => classBuilderScreen()
+      ));
+    }
   }
 }

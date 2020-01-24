@@ -3,26 +3,23 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 class Notices extends StatefulWidget {
   @override
   _NoticesState createState() => _NoticesState();
 }
 
-var _option = ['School', 'Teacher', 'Both'];
-var _current = 'School';
+//var _option = ['School', 'Teacher', 'Both'];
+//var _current = 'School';
 class _NoticesState extends State<Notices> {
   final Shader linearGradient = LinearGradient(
     colors: <Color>[Colors.lightBlueAccent, Colors.indigo],
   ).createShader(Rect.fromLTWH(0.0, 0.0, 200.0, 70.0));
-  bool _isVisible = false;
 
   void showNoticeBox() {
-//    setState(() {
-//      _isVisible = !_isVisible;
-//    });
-
     showDialog(context: context, child: getDialog(), useRootNavigator: true);
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -75,74 +72,71 @@ class _NoticesState extends State<Notices> {
   }
 
   getSectionList(List<DocumentSnapshot> documents) {
-    return Stack(
-        children: <Widget>[
-          ListView(
-            padding: EdgeInsets.symmetric(horizontal: 5.0),
-            shrinkWrap: true,
-            children: List<Widget>.generate(
-              documents.length,
-                  (int index) {
-                return Container(
-                  decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8.0),
-                      border: Border.all(color: Colors.black12)),
-                  padding: EdgeInsets.symmetric(
-                      vertical: 20.0, horizontal: 10.0),
-                  margin: EdgeInsets.symmetric(vertical: 2.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Text(
-                        '${documents[index]['notice']}',
-                        textAlign: TextAlign.justify,
-                        style: TextStyle(fontSize: 16.0, color: Colors.black),
-                      ), Text(
-                        '${documents[index]['className'] +
-                            documents[index]['section']}',
-                        textAlign: TextAlign.justify,
-                        style: TextStyle(fontSize: 14.0, color: Colors.black54),
-                      ),
-                      SizedBox(
-                        height: 3.0,
-                      ),
-                      Text(
-                        '${documents[index]['teacherName']}',
-                        textAlign: TextAlign.end,
-                      ),
-                    ],
+    return Stack(children: <Widget>[
+      ListView(
+        padding: EdgeInsets.symmetric(horizontal: 5.0),
+        shrinkWrap: true,
+        children: List<Widget>.generate(
+          documents.length,
+              (int index) {
+            return Container(
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8.0),
+                  border: Border.all(color: Colors.black12)),
+              padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 10.0),
+              margin: EdgeInsets.symmetric(vertical: 2.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    '${documents[index]['notice']}',
+                    textAlign: TextAlign.justify,
+                    style: TextStyle(fontSize: 16.0, color: Colors.black),
                   ),
-                );
-              },
-            ),
-          ),
-
-        ]);
+                  Text(
+                    '${documents[index]['className'] +
+                        documents[index]['section']}',
+                    textAlign: TextAlign.justify,
+                    style: TextStyle(fontSize: 14.0, color: Colors.black54),
+                  ),
+                  SizedBox(
+                    height: 3.0,
+                  ),
+                  Text(
+                    '${documents[index]['teacherName']}',
+                    textAlign: TextAlign.end,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    ]);
   }
 
   customFloatingActionButton() {
-    return RaisedButton(
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: CupertinoButton(
         color: Colors.blue,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
           child: Text(
             'ADD NOTICE',
-            style: TextStyle(fontSize: 12.0, color: Colors.white),
+            style: TextStyle(fontSize: 14.0, color: Colors.white),
           ),
-        ),
         onPressed: showNoticeBox,
-        splashColor: Colors.indigo,
         padding: EdgeInsets.symmetric(horizontal: 10.0),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(7.0))));
+      ),
+    );
   }
 
+  TextEditingController noticeController = TextEditingController();
   getDialog() {
+    var pref = Provider.of<SharedPreferences>(context);
+    String id = pref.getString('school');
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8)
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       title: Text('Type your notice'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -153,29 +147,15 @@ class _NoticesState extends State<Notices> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextField(
-                    decoration:
-                    InputDecoration(hintText: 'Notice'),
+
+                    controller: noticeController,
+                    decoration: InputDecoration(hintText: 'Notice'),
                     minLines: 1,
                     maxLines: 4,
                     textAlign: TextAlign.center,
                     autofocus: true,
                   ),
                 ),
-                DropdownButton<String>(
-                  items: _option.map((String dropdown) {
-                    return DropdownMenuItem<String>(
-                      value: dropdown,
-                      child: Text(dropdown),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _current = value;
-                    });
-                  },
-                  value: _current,
-                ),
-
               ],
             ),
           ),
@@ -183,23 +163,51 @@ class _NoticesState extends State<Notices> {
       ),
       actions: <Widget>[
         FlatButton(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8)
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           textColor: Colors.blue,
           child: Text('Cancel'),
           onPressed: () {
             Navigator.pop(context);
           },
-        ), RaisedButton(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8)
-          ),
+        ),
+        RaisedButton(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           color: Colors.blue,
           child: Text('SEND'),
-          onPressed: () {},
+          onPressed: () {
+            sendNotice(noticeController.text, id);
+          },
         ),
       ],
     );
+  }
+
+  sendNotice(String text, String id) async {
+    QuerySnapshot list = await Firestore.instance.collection(
+        'schools/$id/classes').getDocuments();
+    int i = 0;
+    for (var doc in list.documents) {
+      doc.reference.updateData({'notice': text}).then((val) => i++);
+    }
+
+
+    Navigator.pop(context);
+    showSuccesfullNotice();
+  }
+
+  showSuccesfullNotice() {
+    showDialog(context: context, child: AlertDialog(
+      content: Text('Notice sent Succesfully to Teacher and Students'),
+      title: Image(
+        image: AssetImage('assets/teacher/notice.png'), width: 80, height: 80,),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10)), actions: <Widget>[
+      FlatButton(
+        child: Text('ok'),
+        onPressed: () {
+          Navigator.pop(context);
+        },
+      )
+    ],));
   }
 }
