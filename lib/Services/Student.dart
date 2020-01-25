@@ -7,7 +7,7 @@ class Student {
   String classId;
   DateTime lastAttendence;
   List<dynamic> presentList, absentList, leaveList;
-  Map<String, dynamic> remark;
+  String remark;
 
   List<dynamic> compulsorySubjectList, optionSubjectList;
   List<result> resultList;
@@ -44,7 +44,7 @@ class Student {
         map['presentList'] ?? List<Timestamp>(),
         map['absentList'] ?? List<Timestamp>(),
         map['leaveList'] ?? List<Timestamp>(),
-        map['remark'],
+        map['remark'] ?? '',
         map['compulsorySubjectList'] ?? List<String>(),
         map['optioSubjectList'] ?? List<String>(),
         map['resultList']);
@@ -65,7 +65,7 @@ class Student {
     map['presentList'] = student.presentList;
     map['absentList'] = student.absentList;
     map['leaveList'] = student.leaveList;
-    map['remark'] = student.remark;
+    map['remark'] = student.remark ?? '';
     map['compulsorySubjectList'] = student.compulsorySubjectList;
     map['optionSubjectList'] = student.optionSubjectList;
     map['resultList'] = student.resultList;

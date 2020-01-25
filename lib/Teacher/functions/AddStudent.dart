@@ -30,13 +30,15 @@ class AddStudentPage extends StatelessWidget {
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: ListView(
+            physics: BouncingScrollPhysics(),
             children: <Widget>[
               Hero(
                 tag: 'add',
-                child: IconButton(
-                  icon: Icon(Icons.add, size: 100),
+                child: Image(
+                  height: 80,
+                  width: 80,
+                  image: AssetImage('assets/teacher/add.png'),
                 ),
               ),
               Padding(
@@ -99,7 +101,7 @@ class AddStudentPage extends StatelessWidget {
         List<Timestamp>(),
         List<Timestamp>(),
         List<Timestamp>(),
-        Map(),
+        '',
         subList,
         List<String>(),
         List<result>());
@@ -127,7 +129,9 @@ class AddStudentPage extends StatelessWidget {
                     child: Text('done'),
                   ),
                   FlatButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                     color: Colors.blue,
                     child: Text('Add Another'),
                   )

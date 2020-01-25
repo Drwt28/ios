@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:school_magna/Notification/Notification.dart';
 import 'package:school_magna/Principal/CreateChatPage.dart';
 import 'package:school_magna/Teacher/TeacherChatPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,6 +14,9 @@ class PrincipalChatScreen extends StatefulWidget {
 }
 
 class _PrincipalChatScreenState extends State<PrincipalChatScreen> {
+
+  NoticationService noticationService = NoticationService();
+
   @override
   Widget build(BuildContext context) {
     var pref = Provider.of<SharedPreferences>(context);
@@ -70,25 +75,27 @@ class _PrincipalChatScreenState extends State<PrincipalChatScreen> {
         });
   }
 
+  Future<int> getChatCounter(DocumentSnapshot document) async {
+    var pref = Provider.of<SharedPreferences>(context);
+    int count = pref.getInt(document.documentID);
+    var col = await Firestore.instance.collection(
+        'schools/${pref.getString('school')}/chat/${document
+            .documentID}/messages').getDocuments();
+    int not = col.documents.length;
+
+    return (not - count);
+  }
+
   buildChatList(DocumentSnapshot document, String id) {
     var pref = Provider.of<SharedPreferences>(context);
 
     bool d = false;
 
-    int not = document.data['count'];
-    int count = pref.getInt(document.documentID);
-    if (count == null) {
-      count = not;
-      pref.setInt(document.documentID, not);
 
-      d = true;
-    } else {
-      if (not == count) {
-        d = false;
-      } else {
-        d = true;
-      }
-    }
+    String notificationId = "C" + pref.getString('school').substring(
+        0, pref.getString('school').indexOf('@'));
+    noticationService.saveUserToken(notificationId);
+
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
@@ -103,29 +110,30 @@ class _PrincipalChatScreenState extends State<PrincipalChatScreen> {
         trailing: SizedBox(
           height: 30,
           width: 30,
-          child: !(count - not == 0)
-              ? Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.indigo,
-            ),
-            child: Center(
-                child: Text(
-                  ((not - count)).toString(),
-                  style: TextStyle(color: Colors.white),
-                )),
-          )
-              : SizedBox(),
+          child: FutureBuilder<int>(
+              future: getChatCounter(document),
+              builder: (context, snap) =>
+              (snap.hasData && snap.data > 0) ? Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.indigo,
+                ),
+                child: Center(
+                    child: Text(
+                      (snap.data).toString(),
+                      style: TextStyle(color: Colors.white),
+                    )),
+              )
+                  : SizedBox()),
         ),
         onTap: () {
-          pref.setInt(document.documentID, not);
           Navigator.push(
               context,
               MaterialPageRoute(
                   builder: (context) =>
                       ChatScreen(
                         classId: document.documentID,
-                        id: document.documentID,
+                        id: id,
                       )));
         },
       ),

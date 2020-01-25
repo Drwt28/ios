@@ -145,7 +145,7 @@ class _DetailHomeWorkPageState extends State<DetailHomeWorkPage> {
               SizedBox(
                 height: 10,
               ),
-              SizedBox(
+              (h.images != null && h.images.length > 0) ? SizedBox(
                 height: 200,
                 width: MediaQuery.of(context).size.width * .9,
                 child: Hero(
@@ -162,12 +162,14 @@ class _DetailHomeWorkPageState extends State<DetailHomeWorkPage> {
                           ? child
                           : Center(
                           child: LinearProgressIndicator(
-                            backgroundColor: Colors.indigo,
+                            value: ((progress.cumulativeBytesLoaded /
+                                progress.expectedTotalBytes) * 100),
+
                           ));
                     },
                   ),
                 ),
-              ),
+              ) : SizedBox(),
               SizedBox(
                 height: 10,
               ),
@@ -182,14 +184,15 @@ class _DetailHomeWorkPageState extends State<DetailHomeWorkPage> {
           ),
         ),
         onTap: () {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) =>
-                      FullScreen(
-                        image: h.images[0],
-                        tag: h.subject,
-                      )));
+          if ((h.images != null && h.images.length > 0))
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        FullScreen(
+                          image: h.images[0],
+                          tag: h.subject,
+                        )));
         },
       ),
     );

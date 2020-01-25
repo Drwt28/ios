@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:school_magna/Model/constraints.dart';
+import 'package:school_magna/Notification/Notification.dart';
+import 'package:school_magna/Notification/TeacherNotification.dart';
 import 'package:school_magna/Principal/CreateChatPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,6 +25,7 @@ bool isTeacher = false;
 
 class _StudentChatScreenState extends State<StudentChatScreen> {
 
+  NoticationService notification = NoticationService();
   String sender = "";
   final _auth = FirebaseAuth.instance;
   String messageText;
@@ -31,9 +34,9 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
-    super.initState();
     getCurrentUser();
+
+    super.initState();
   }
 
   void getCurrentUser() async {
@@ -61,12 +64,18 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
     });
   }
 
+  TeacherNotification teacherNotification = TeacherNotification();
+
   @override
   Widget build(BuildContext context) {
     pref = Provider.of<SharedPreferences>(context);
     String id = pref.getString('school');
+    var user = Provider.of<FirebaseUser>(context);
     return Scaffold(
-      appBar: AppBar(title: Text(sender)),
+      appBar: AppBar(title: user == null ? Text(
+          widget.classId.toString().substring(
+              0, widget.classId.toString().indexOf('@')))
+          : Text(pref.getString('studentName'))),
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -93,25 +102,31 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
                   FlatButton(
                     onPressed: () async {
                       if (messageText.isNotEmpty) {
-                        var snap = await _firestore
-                            .document('schools/$id/chat/${widget.studentId}')
-                            .get();
-                        int count = snap.data['count'];
-                        count = count + 1;
                         _firestore
-                            .document('schools/$id/chat/${widget.studentId}')
-                            .updateData({'count': count}).then((val) {
-                          _firestore
-                              .collection(
-                              'schools/$id/chat/${widget.studentId}/messages')
-                              .add({
-                            'text': messageText,
-                            'sender': currentUser,
-                            'timestamp':
-                                DateTime.now().millisecondsSinceEpoch.toString()
-                          });
-                          messageText = "";
+                            .collection(
+                            'schools/$id/chat/${widget.studentId}/messages')
+                            .add({
+                          'text': messageText,
+                          'sender': currentUser,
+                          'timestamp':
+                          DateTime
+                              .now()
+                              .millisecondsSinceEpoch
+                              .toString()
                         });
+
+
+                        if (user == null) {
+                          teacherNotification.sendNotification(
+                              '$sender sent you a message ', messageText,
+                              "C" + widget.studentId);
+                        }
+                        else {
+                          teacherNotification.sendNotification(
+                              'Message from Class Teacher', messageText,
+                              widget.studentId);
+                        }
+                        messageText = "";
                         messageTextEditingController.clear();
                       }
                     },
@@ -154,7 +169,7 @@ class MessagesStream extends StatelessWidget {
 
         final messages = snapshot.data.documents;
         List<MessageBubble> messageBubbles = [];
-
+        pref.setInt(studentId, messages.length);
         for (var message in messages) {
           final messageText = message.data['text'];
           final messageSender = message.data['sender'];

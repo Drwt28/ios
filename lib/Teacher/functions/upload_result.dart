@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:school_magna/Notification/TeacherNotification.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UploadResult extends StatefulWidget {
@@ -19,6 +21,7 @@ class UploadResult extends StatefulWidget {
 class _UploadResultState extends State<UploadResult> {
   Map<String, dynamic> marks = Map();
   TextEditingController maxMarks = TextEditingController();
+  TeacherNotification notification = TeacherNotification();
   List<TextEditingController> controllers = List<TextEditingController>();
   final _formKey = GlobalKey<FormState>();
   String max = '';
@@ -97,6 +100,9 @@ class _UploadResultState extends State<UploadResult> {
                             if (value.isEmpty) {
                               return 'Enter marks';
                             }
+                            if (int.parse(value) < 0) {
+                              return 'Enter marks greater than 0';
+                            }
                             return int.parse(value) > int.parse(maxMarks.text)
                                 ? 'Enter marks less than ${maxMarks.text}'
                                 : null;
@@ -139,7 +145,9 @@ class _UploadResultState extends State<UploadResult> {
   }
 
   uploadResult(context, Map marks) {
+    var user = Provider.of<FirebaseUser>(context);
     var pref = Provider.of<SharedPreferences>(context);
+    String topic = user.email.substring(0, user.email.indexOf('@'));
     String schoolId = pref.getString('school');
     DocumentReference ref = Firestore.instance
         .collection('schools/$schoolId/students/${widget.stdId}/result')
@@ -151,6 +159,9 @@ class _UploadResultState extends State<UploadResult> {
     dataMap['marks'] = marks;
     dataMap['max'] = maxMarks.text;
     ref.setData(dataMap).then((val) {
+      notification.sendNotification(
+          '${widget.resultName } result delcared', 'Tap to see your marks',
+          topic);
       showDialog(context: context, child: createDialog());
     });
   }

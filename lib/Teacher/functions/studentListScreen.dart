@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expandable/expandable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,42 +17,58 @@ class _StudentListPageState extends State<StudentListPage> {
   Widget build(BuildContext context) {
     var user = Provider.of<FirebaseUser>(context);
     var pref = Provider.of<SharedPreferences>(context);
-    return Scaffold(
-        appBar: AppBar(
-          title: Text('Student List'),
-        ),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.max,
-          children: <Widget>[
-            Flexible(
-              flex: 1,
-              child: SizedBox(
-                height: 90,
-                width: 90,
-                child: buildTopBox(),
-              ),
+    return StreamBuilder<QuerySnapshot>(
+        stream: Firestore.instance
+            .collection('schools')
+            .document(pref.getString('school'))
+            .collection('students')
+            .orderBy('name')
+            .where('classId', isEqualTo: user.email)
+            .snapshots(),
+        builder: (context, query) {
+          return (query.data != null && query.data.documents.length > 0)
+              ? Scaffold(
+            backgroundColor: Colors.white,
+            body: CustomScrollView(
+              slivers: <Widget>[
+                SliverAppBar(
+                  elevation: 0,
+                  pinned: true,
+                  primary: true,
+                  expandedHeight:
+                  MediaQuery
+                      .of(context)
+                      .size
+                      .height * 0.3,
+                  flexibleSpace: FlexibleSpaceBar(
+                    centerTitle: true,
+                    collapseMode: CollapseMode.parallax,
+                    title: Text(
+                      'Student List',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    background: Center(
+                      child: SizedBox(
+                          height: 80,
+                          width: 80,
+                          child: Center(child: buildTopBox())),
+                    ),
+                  ),
+                ),
+                SliverList(
+
+                  delegate: SliverChildBuilderDelegate(
+                          (context, i) {
+                        return buildStudentItem(query.data.documents[i]);
+                      },
+                      childCount: query.data.documents.length),
+                )
+              ],
             ),
-            Flexible(
-              flex: 7,
-              child: StreamBuilder<QuerySnapshot>(
-                stream: Firestore.instance
-                    .collection('schools')
-                    .document(pref.getString('school'))
-                    .collection('students')
-                    .orderBy('name')
-                    .where('classId', isEqualTo: user.email)
-                    .snapshots(),
-                builder: (context, query) {
-                  return (query.data != null && query.data.documents.length > 0)
-                      ? builStudentList(query.data.documents)
-                      : CircularProgressIndicator();
-                },
-              ),
-            ),
-          ],
-        ));
+
+          )
+              : Scaffold(body: Center(child: CircularProgressIndicator()));
+        });
   }
 
   Widget buildTopBox() {
@@ -77,43 +94,51 @@ class _StudentListPageState extends State<StudentListPage> {
 
 
   Widget buildStudentItem(DocumentSnapshot document) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Card(
-        child: ExpandablePanel(
-
-          tapBodyToCollapse: true,
-
-          header: ListTile(
-            leading: CircleAvatar(
-              child: Image.asset('assets/teacher/student.png'),),
-            title: Text(document['name']),
-          ),
-          collapsed: Container(child: Text('view Details')),
-          expanded: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: <Widget>[
-
-                buildDetailedTextStudent("father's name", document['fName'])
-                , SizedBox(height: 10,)
-                ,
-                buildDetailedTextStudent("mothers's name", document['mName'])
-                , SizedBox(height: 10,)
-                ,
-                buildDetailedTextStudent("date of birth", "23/11/2009")
-                , SizedBox(height: 10,),
-                buildDetailedTextStudent("Remark", document['remark'])
-                ,
-                SizedBox(height: 10,)
+    return Card(
+      child: ExpandablePanel(
 
 
-              ],
-            ),
-          ),
-          tapHeaderToExpand: true,
-          hasIcon: true,
+        header: ListTile(
+          leading: CircleAvatar(
+            child: Image.asset('assets/teacher/student.png'),),
+          title: Text(document['name']),
         ),
+        collapsed: Container(child: Text('view Details')),
+        expanded: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+
+            children: <Widget>[
+
+              buildDetailedTextStudent("father's name", document['fName'])
+              ,
+              SizedBox(height: 10,)
+              ,
+              buildDetailedTextStudent("mothers's name", document['mName'])
+              ,
+              SizedBox(height: 10,)
+              ,
+              buildDetailedTextStudent("date of birth", "23/11/2009")
+              ,
+              SizedBox(height: 10,),
+              Text('Remark', style: TextStyle(fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black),)
+              ,
+              Text(document['remark'],
+                style: TextStyle(color: Colors.indigo, fontSize: 16),
+                softWrap: true,)
+              ,
+              SizedBox(height: 10,)
+
+
+            ],
+          ),
+        ),
+        tapHeaderToExpand: true,
+        hasIcon: true,
       ),
     );
   }
@@ -124,7 +149,9 @@ class _StudentListPageState extends State<StudentListPage> {
 
       children: <Widget>[
         Text(tile + "\t:", style: TextStyle(color: Colors.blue, fontSize: 16),)
-        , Text(data, style: TextStyle(color: Colors.black, fontSize: 16),)
+        ,
+        Text(data, textAlign: TextAlign.justify,
+          style: TextStyle(color: Colors.black, fontSize: 16),)
       ],
     );
   }

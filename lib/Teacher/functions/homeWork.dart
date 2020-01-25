@@ -9,6 +9,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_calendar_carousel/flutter_calendar_carousel.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:school_magna/Notification/TeacherNotification.dart';
 import 'package:school_magna/Services/Class.dart';
 import 'package:school_magna/Widgets/Homework.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,6 +22,7 @@ class homeworkPage extends StatefulWidget {
 class _homeworkPageState extends State<homeworkPage> {
   File _image;
 
+  TeacherNotification notification = TeacherNotification();
   bool dec = true;
   int progress = 0;
   List<bool> uploadImage = [];
@@ -62,22 +64,22 @@ class _homeworkPageState extends State<homeworkPage> {
   Widget build(BuildContext context) {
     var user = Provider.of<FirebaseUser>(context);
     var pref = Provider.of<SharedPreferences>(context);
-    return Material(
-      color: Colors.white,
-      child: StreamBuilder<DocumentSnapshot>(
-        stream: Firestore.instance
-            .collection('schools')
-            .document(pref.getString('school'))
-            .collection('classes')
-            .document(user.email)
-            .snapshots(),
-        builder: (context, snap) =>
-            SafeArea(
-              child: (!snap.hasData)
-                  ? Center(
-                child: CircularProgressIndicator(),
-              )
-                  : CustomScrollView(
+    return StreamBuilder<DocumentSnapshot>(
+      stream: Firestore.instance
+          .collection('schools')
+          .document(pref.getString('school'))
+          .collection('classes')
+          .document(user.email)
+          .snapshots(),
+      builder: (context, snap) =>
+          SafeArea(
+            child: (!snap.hasData)
+                ? Center(
+              child: CircularProgressIndicator(),
+            )
+                : Scaffold(
+              body: CustomScrollView(
+                physics: BouncingScrollPhysics(),
                 slivers: <Widget>[
                   SliverAppBar(
                     primary: true,
@@ -85,7 +87,7 @@ class _homeworkPageState extends State<homeworkPage> {
                     expandedHeight: MediaQuery
                         .of(context)
                         .size
-                        .height * 0.4,
+                        .height * 0.3,
                     flexibleSpace: FlexibleSpaceBar(
                       centerTitle: true,
                       collapseMode: CollapseMode.pin,
@@ -113,7 +115,7 @@ class _homeworkPageState extends State<homeworkPage> {
                 ],
               ),
             ),
-      ),
+          ),
     );
   }
 

@@ -24,7 +24,9 @@ class _NoticePageState extends State<NoticePage> {
     var user = Provider.of<FirebaseUser>(context);
 
     return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(
+          title: Text('Notice'),
+        ),
 
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -56,6 +58,8 @@ class _NoticePageState extends State<NoticePage> {
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: TextField(
+                          minLines: 1,
+                          maxLines: 20,
                           controller: notice,
                           decoration: InputDecoration(
                               labelText: 'Enter Notice'
@@ -72,6 +76,7 @@ class _NoticePageState extends State<NoticePage> {
                         alignment: Alignment.bottomRight,
                         child: RaisedButton(
                           onPressed: () {
+
                             sendNotice(user.email, pref.getString('school'),
                                 notice.text);
                           },
@@ -111,6 +116,7 @@ class _NoticePageState extends State<NoticePage> {
 
       ref.updateData({'notice': noticeText})
           .then((val) {
+        notice.clear();
         var name = id.substring(0, id.indexOf("@"));
         _notification.sendNotification(
             'New Notice for $name', noticeText, name);
@@ -138,6 +144,7 @@ class _NoticePageState extends State<NoticePage> {
         FlatButton(
           child: Text('ok'),
           onPressed: () {
+            Navigator.pop(context);
             Navigator.pop(context);
           },
         )

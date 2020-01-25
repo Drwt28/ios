@@ -109,6 +109,26 @@ class _HomePageState extends State<HomePage> {
                                       snapshot.data.data['mName']),
 
                                   buildNotice(doc)
+                                  , (snapshot.data.data['remark']
+                                      .toString()
+                                      .isNotEmpty) ? ListTile(
+                                    title: Text(
+                                      'Teacher Remark',
+                                      textAlign: TextAlign.start,
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.indigo,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      snapshot.data.data['remark'],
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          letterSpacing: 1.0, fontSize: 16.0),
+                                    ),
+                                  ) : SizedBox()
+
                                 ],
                               ));
                         }),
@@ -132,6 +152,25 @@ class _HomePageState extends State<HomePage> {
                         ),
                         title: Text('Chat With Class Teacher'),
                         subtitle: Text('tap to see remarks'),
+                        trailing: SizedBox(
+                          height: 30,
+                          width: 30,
+                          child: FutureBuilder<int>(
+                              future: getChatCounter(snapshot.data.documentID),
+                              builder: (context, snap) =>
+                              (snap.hasData && snap.data > 0) ? Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.indigo,
+                                ),
+                                child: Center(
+                                    child: Text(
+                                      (snap.data).toString(),
+                                      style: TextStyle(color: Colors.white),
+                                    )),
+                              )
+                                  : SizedBox()),
+                        ),
                         onTap: () {
                           String classId =
                           snapshot.data.data['classId'];
@@ -198,6 +237,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<int> getChatCounter(String documentId) async {
+    var pref = Provider.of<SharedPreferences>(context);
+    int count = pref.getInt(documentId);
+    var col = await Firestore.instance.collection(
+        'schools/${pref.getString('school')}/chat/$documentId/messages')
+        .getDocuments();
+    int not = col.documents.length;
+
+    return (not - count);
+  }
   buildNotice(AsyncSnapshot<DocumentSnapshot> doc) {
     return (doc.data['notice']
         .toString()

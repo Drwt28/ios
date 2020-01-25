@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:school_magna/Notification/TeacherNotification.dart';
 import 'package:school_magna/Services/Class.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,7 +35,7 @@ class HomeworkTile extends StatefulWidget {
 
 class _HomeworkTileState extends State<HomeworkTile> {
   bool imageSlected = false;
-
+  TeacherNotification notification = TeacherNotification();
   File imageFile = null;
   bool progress = true;
   bool sent = false;
@@ -126,7 +127,14 @@ class _HomeworkTileState extends State<HomeworkTile> {
             child: Center(
               child: FlatButton(
                 onPressed: () {
-                  if (imageFile == null || progress) {
+                  if (imageFile == null) {
+                    setState(() {
+                      progress = false;
+                    });
+                    String text = controller.text;
+                    controller.clear();
+                    sendTextHomework(text, widget.subjectName);
+                  } else {
                     uploadImageStorage(
                         widget.subjectName,
                         1,
@@ -207,6 +215,7 @@ class _HomeworkTileState extends State<HomeworkTile> {
 
   void saveToDatabase(FirebaseUser user, String t, String url, String schoolId,
       String subjectName) {
+
     String id = user.email;
     Map<String, dynamic> homework = Map();
 
@@ -233,12 +242,54 @@ class _HomeworkTileState extends State<HomeworkTile> {
 
     Map<String, dynamic> dataMap = ({subjectName: homework});
     doc.updateData(dataMap).then((val) {
+      notification.sendNotification(
+          'Homework', 'Teacher sent you homework in ${widget.subjectName}',
+          user.email.substring(0, user.email.indexOf("@")));
       setState(() {
         sent = true;
       });
     }).catchError((e) {
       print(e.toString());
     });
+  }
+
+  sendTextHomework(String text, String subjectName) {
+    var user = Provider.of<FirebaseUser>(context);
+    var pref = Provider.of<SharedPreferences>(context);
+    String schoolId = pref.getString('school');
+    String id = user.email;
+    Map<String, dynamic> homework = Map();
+
+    DateTime date = DateTime.now();
+
+    homework['day'] = widget.days[date.weekday - 2];
+    String day = widget.days[date.weekday - 2].toLowerCase();
+    DocumentReference doc =
+    Firestore.instance.document('schools/$schoolId/classes/$id');
+
+
+    homework['image'] = List();
+
+    homework['time'] = Timestamp.now();
+
+    homework['text'] = text;
+
+    homework['day'] = day;
+
+    homework['name'] = subjectName;
+
+    Map<String, dynamic> dataMap = ({subjectName: homework});
+    doc.updateData(dataMap).then((val) {
+      notification.sendNotification(
+          'Homework', 'Teacher sent you homework in ${widget.subjectName}',
+          user.email.substring(0, user.email.indexOf("@")));
+      setState(() {
+        sent = true;
+      });
+    }).catchError((e) {
+      print(e.toString());
+    });
+
   }
 
   sentCard(String subjectName) {

@@ -50,9 +50,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
     setState(() {
       if (currentUser == widget.classId) {
-        sender = widget.id
+        sender = widget.classId
             .toString()
-            .substring(0, widget.id.toString().indexOf("@"));
+            .substring(0, widget.classId.toString().indexOf("@"));
       } else {
         sender = widget.id
             .toString()
@@ -64,9 +64,15 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     pref = Provider.of<SharedPreferences>(context);
+    var user = Provider.of<FirebaseUser>(context);
+
     String id = pref.getString('school');
+
     return Scaffold(
-      appBar: AppBar(title: Text(sender)),
+      appBar: AppBar(title: user == null ? Text(
+          widget.id.toString().substring(0, widget.id.toString().indexOf('@')))
+          : Text(widget.classId.toString().substring(
+          0, widget.classId.toString().indexOf('@')))),
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -102,28 +108,51 @@ class _ChatScreenState extends State<ChatScreen> {
                       }
 
                       if (messageText.isNotEmpty) {
+                        _firestore
+                            .collection(
+                            'schools/$id/chat/${widget.classId}/messages')
+                            .add({
+                          'text': messageText,
+                          'sender': currentUser,
+                          'timestamp':
+                          DateTime
+                              .now()
+                              .millisecondsSinceEpoch
+                              .toString()
+                        });
+                        if (user == null) {
+                          String id = widget.classId.toString().substring(0,
+                              widget.classId.toString().indexOf('@'));
+                          String sen = widget.id.toString().substring(0,
+                              widget.id.toString().indexOf('@'));
+                          teacherNotification.sendNotification(
+                              sen + "\t sent you a message", messageText,
+                              "C" + id);
+                        }
+                        else {
+                          String sen = widget.classId.toString().substring(0,
+                              widget.classId.toString().indexOf('@'));
+                          String id = widget.id.toString().substring(0,
+                              widget.id.toString().indexOf('@'));
+                          teacherNotification.sendNotification(
+                              sen + "\t sent you a message", messageText,
+                              "C" + id);
+                        }
+
+                        messageText = "";
                         var snap = await _firestore
                             .document('schools/$id/chat/${widget.classId}')
                             .get();
                         int count = snap.data['count'];
                         count = count + 1;
                         pref.setInt(widget.classId, count);
+
+
                         _firestore
                             .document('schools/$id/chat/${widget.classId}')
                             .updateData({'count': count}).then((val) {
-                          _firestore
-                              .collection(
-                              'schools/$id/chat/${widget.classId}/messages')
-                              .add({
-                            'text': messageText,
-                            'sender': currentUser,
-                            'timestamp':
-                            DateTime
-                                .now()
-                                .millisecondsSinceEpoch
-                                .toString()
-                          });
-                          messageText = "";
+
+
                         });
                         messageTextEditingController.clear();
                       }
@@ -165,6 +194,9 @@ class MessagesStream extends StatelessWidget {
 
         var messages = snapshot.data.documents;
         List<MessageBubble> messageBubbles = [];
+        //updating counter
+        pref.setInt(classId, messages.length);
+
         for (var message in messages) {
           final messageText = message.data['text'];
           final messageSender = message.data['sender'];

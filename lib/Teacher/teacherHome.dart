@@ -481,13 +481,14 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                                 ), FlatButton(
                                   color: Colors.indigo,
                                   onPressed: () {
+                                    String name = resultNameField.text;
+                                    resultNameField.text;
                                     if (_formKey.currentState.validate()) {
                                       Navigator.pushReplacement(context,
                                           MaterialPageRoute(
                                               builder: (context) =>
                                                   StudentResultPage(
-                                                      resultName: resultNameField
-                                                          .text
+                                                      resultName: name
                                                   )));
                                     }
                                   },
@@ -502,7 +503,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             'Result',
                             'assets/teacher/exam.png',
                             Colors.indigo,
-                            Colors.indigoAccent, 'exam'),
+                            Colors.indigoAccent, 'result'),
 
                       )
                     ],
@@ -612,6 +613,20 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         });
   }
 
+  Future<int> getChatCounter(DocumentSnapshot document) async {
+    var user = Provider.of<FirebaseUser>(context);
+    var pref = Provider.of<SharedPreferences>(context);
+    int count = pref.getInt(document.documentID);
+
+    var col = await Firestore.instance.collection(
+        'schools/${pref.getString('school')}/chat/${document
+            .documentID}/messages').getDocuments();
+    int not = col.documents.length;
+    if (count == null) {
+      pref.setInt(document.documentID, col.documents.length);
+    }
+    return (not - count);
+  }
   buildChatList(DocumentSnapshot document, String id) {
     var user = Provider.of<FirebaseUser>(context);
     var pref = Provider.of<SharedPreferences>(context);
@@ -627,20 +642,15 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
 //    _notication.saveUserToken(topic);
     bool d = false;
     String name = document.data['name'];
-    int not = document.data['count'];
     int count = pref.getInt(document.documentID);
-    if (count == null) {
-      count = not;
-      pref.setInt(document.documentID, not);
 
-      d = true;
-    } else {
-      if (not == count) {
-        d = false;
-      } else {
-        d = true;
+
+    String notificationId = document.documentID;
+    if (document.documentID.contains('@')) {
+      notificationId =
+          document.documentID.substring(0, document.documentID.indexOf('@'));
       }
-    }
+    _notication.saveUserToken('C' + notificationId);
 
     if (document.documentID == user.email) {
       name = pref.getString('school');
@@ -660,22 +670,23 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         trailing: SizedBox(
           height: 30,
           width: 30,
-          child: !(count - not == 0)
-              ? Container(
+          child: FutureBuilder<int>(
+              future: getChatCounter(document),
+              builder: (context, snap) =>
+              (snap.hasData && snap.data > 0) ? Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.indigo,
             ),
             child: Center(
                 child: Text(
-                  (not - count).toString(),
+                  (snap.data).toString(),
                   style: TextStyle(color: Colors.white),
                 )),
           )
-              : SizedBox(),
+                  : SizedBox()),
         ),
         onTap: () {
-          pref.setInt(document.documentID, not);
           if (user.email == document.documentID) {
             Navigator.push(
                 context,

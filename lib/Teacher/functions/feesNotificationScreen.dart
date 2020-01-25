@@ -59,7 +59,8 @@ class _feesNotificationPageState extends State<feesNotificationPage> {
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
+      persistentFooterButtons: <Widget>[
+        RaisedButton(
           onPressed: () {
             int i = 0;
             for (var c in studentId) {
@@ -89,10 +90,21 @@ class _feesNotificationPageState extends State<feesNotificationPage> {
                     ],
                   ));
             }
-
           },
-          child: Icon(Icons.check),
-        ));
+          child: Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                Text(
+                  'Send Fee Message', style: TextStyle(color: Colors.white),),
+                Icon(Icons.check),
+              ],
+            ),
+          ),
+        )
+      ],
+    );
   }
 
   Widget buildAttendence(String a) {

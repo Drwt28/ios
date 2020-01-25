@@ -28,7 +28,7 @@ class _StudentHomeState extends State<StudentHome> {
 
   final List<String> _childrenText = [
     'Home',
-    'Attendece',
+    'Attendance',
     'Homework',
     'Result'
   ];

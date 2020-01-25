@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:school_magna/Model/model.dart';
+import 'package:school_magna/Notification/Notification.dart';
+import 'package:school_magna/Notification/TeacherNotification.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RemarkPage extends StatefulWidget {
@@ -18,41 +20,62 @@ class _RemarkPageState extends State<RemarkPage> {
   Widget build(BuildContext context) {
     var user = Provider.of<FirebaseUser>(context);
     var pref = Provider.of<SharedPreferences>(context);
-    return Scaffold(
-        appBar: AppBar(
-          title: Text('Remark'),
-        ),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.max,
-          children: <Widget>[
-            Flexible(
-              flex: 1,
-              child: SizedBox(
-                height: 90,
-                width: 90,
-                child: buildTopBox(),
-              ),
+    return StreamBuilder<QuerySnapshot>(
+        stream: Firestore.instance
+            .collection('schools')
+            .document(pref.getString('school'))
+            .collection('students')
+            .orderBy('name')
+            .where('classId', isEqualTo: user.email)
+            .snapshots(),
+        builder: (context, query) {
+          return (query.data != null && query.data.documents.length > 0)
+              ? Scaffold(
+            backgroundColor: Colors.white,
+            body: CustomScrollView(
+              slivers: <Widget>[
+                SliverAppBar(
+                  elevation: 0,
+                  pinned: true,
+                  primary: true,
+                  expandedHeight:
+                  MediaQuery
+                      .of(context)
+                      .size
+                      .height * 0.3,
+                  flexibleSpace: FlexibleSpaceBar(
+                    centerTitle: true,
+                    collapseMode: CollapseMode.parallax,
+                    title: Text(
+                      'Student Remarks',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    background: Center(
+                      child: SizedBox(
+                          height: 80,
+                          width: 80,
+                          child: Center(child: buildTopBox())),
+                    ),
+                  ),
+                ),
+                SliverList(
+
+                  delegate: SliverChildBuilderDelegate(
+                          (context, i) {
+                        return remarkItem(
+                          name: query.data.documents[i]['name'],
+                          roll: ((i + 1).toString()),
+                          id: query.data.documents[i].documentID,
+                        );
+                      },
+                      childCount: query.data.documents.length),
+                )
+              ],
             ),
-            Flexible(
-              flex: 7,
-              child: StreamBuilder<QuerySnapshot>(
-                stream: Firestore.instance
-                    .collection('schools')
-                    .document(pref.getString('school'))
-                    .collection('students')
-                    .where('classId', isEqualTo: user.email)
-                    .snapshots(),
-                builder: (context, query) {
-                  return (query.data != null && query.data.documents.length > 0)
-                      ? buildRemarkList(query.data.documents)
-                      : CircularProgressIndicator();
-                },
-              ),
-            ),
-          ],
-        ));
+
+          )
+              : Scaffold(body: Center(child: CircularProgressIndicator()));
+        });
   }
 
   Widget buildTopBox() {
@@ -70,8 +93,8 @@ class _RemarkPageState extends State<RemarkPage> {
         itemBuilder: (context, index) {
           return remarkItem(
             name: documents[index]['name'],
-            roll: index.toString(),
-            id: documents[index]['id'],
+            roll: ((index + 1).toString()),
+            id: documents[index].documentID,
           );
         });
   }
@@ -91,7 +114,10 @@ class remarkItem extends StatefulWidget {
 class _remarkItemState extends State<remarkItem> {
   bool send = false,
       sending = false;
+
+  TeacherNotification teacherNotification = TeacherNotification();
   final _formKey = GlobalKey<FormState>();
+
 
   TextEditingController _editingController = TextEditingController();
 
@@ -118,6 +144,9 @@ class _remarkItemState extends State<remarkItem> {
       isThreeLine: true,
       contentPadding: EdgeInsets.all(5),
       subtitle: TextFormField(
+        maxLines: 10,
+        minLines: 1,
+
         controller: _editingController,
         validator: (val) {
           if (val.isEmpty) {
@@ -132,7 +161,7 @@ class _remarkItemState extends State<remarkItem> {
           : IconButton(
         onPressed: () {
           sendRemark(
-              pref.getString('school'), _editingController.text);
+              pref.getString('school'), _editingController.text, id);
         },
         icon: Icon(Icons.send),
         color: Colors.blue,
@@ -140,7 +169,7 @@ class _remarkItemState extends State<remarkItem> {
     );
   }
 
-  sendRemark(String schoolId, String remark) {
+  sendRemark(String schoolId, String remark, String studentId) {
     if (remark.isNotEmpty) {
       setState(() {
         sending = true;
@@ -152,6 +181,10 @@ class _remarkItemState extends State<remarkItem> {
         setState(() {
           send = true;
           sending = false;
+
+          teacherNotification.sendNotification(
+              'Remark From teacher', remark, studentId);
+
         });
       });
     }

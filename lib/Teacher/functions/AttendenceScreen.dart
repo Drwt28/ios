@@ -113,7 +113,7 @@ class _AttendencePageState extends State<AttendencePage> {
                   ))
             ],
           )
-              : CircularProgressIndicator();
+              : Scaffold(body: Center(child: CircularProgressIndicator()));
         });
   }
 
@@ -133,7 +133,7 @@ class _AttendencePageState extends State<AttendencePage> {
           leaveList.remove(snap.documentID);
         }
         if (index == 2 && !leaveList.contains(snap.documentID)) {
-          absentList.add(snap.documentID);
+          absentList.remove(snap.documentID);
           presentList.remove(snap.documentID);
           leaveList.add(snap.documentID);
         }
@@ -142,7 +142,6 @@ class _AttendencePageState extends State<AttendencePage> {
 
 
 
-  buildWidget() {}
 
   Widget buildTopBox() {
     return Hero(

@@ -19,9 +19,17 @@ class ResultPage extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           return Scaffold(
-            body: !(snapshot.hasData && snapshot.data.documents.length > 0)
+            body: !(snapshot.hasData || snapshot.data.documents.length > 0)
                 ? Center(
-              child: CircularProgressIndicator(),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: <Widget>[
+                  Image(width: 100,
+                    height: 100,
+                    image: AssetImage('assets/teacher/exam.png'),)
+                  , Text('No result declared yet')
+                ],
+              ),
             )
                 : ListView(
               scrollDirection: Axis.vertical,
